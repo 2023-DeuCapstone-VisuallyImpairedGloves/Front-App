@@ -2,6 +2,7 @@
 # Gradle files
 .gradle/
 build/
+api_info.xml
 
 # Local configuration file (sdk path, etc)
 local.properties
