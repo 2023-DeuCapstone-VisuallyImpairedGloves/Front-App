@@ -33,10 +33,8 @@ fun Login(
     onPwChange: (String) -> Unit,
     onNavigateToSignUp: () -> Unit
 ) {
-    val scaffoldState = rememberScaffoldState()
 
     DefaultLayout(
-        scaffoldState = scaffoldState
     ) {
         Column(
             modifier = Modifier
