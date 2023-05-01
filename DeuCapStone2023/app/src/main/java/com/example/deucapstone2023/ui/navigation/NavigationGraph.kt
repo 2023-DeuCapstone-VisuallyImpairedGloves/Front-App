@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.deucapstone2023.ui.screen.home.Home
 import com.example.deucapstone2023.ui.screen.home.HomeViewModel
+import com.example.deucapstone2023.ui.screen.home.search.SearchViewModel
 import com.skt.tmap.TMapView
 
 @Composable
@@ -30,7 +31,8 @@ fun NavigationGraph(
     modifier: Modifier,
     navController: NavHostController,
     tMapView: TMapView,
-    homeViewModel: HomeViewModel = hiltViewModel()
+    homeViewModel: HomeViewModel = hiltViewModel(),
+    searchViewModel: SearchViewModel
 ) {
     NavHost(
         navController = navController,
@@ -45,6 +47,10 @@ fun NavigationGraph(
                 onTitleChanged = homeViewModel::setTitle,
                 onNavigateToNaviScreen = {}
             )
+        }
+
+        composable(route = NavigationItem.SEARCH.route) {
+
         }
 
         composable(NavigationItem.SETTING.route) {

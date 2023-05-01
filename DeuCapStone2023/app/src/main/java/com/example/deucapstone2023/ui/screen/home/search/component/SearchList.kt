@@ -21,7 +21,7 @@ import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.component.HorizontalDivider
 import com.example.deucapstone2023.ui.component.HorizontalSpacer
 import com.example.deucapstone2023.ui.component.VerticalSpacer
-import com.example.deucapstone2023.ui.screen.home.search.POIState
+import com.example.deucapstone2023.ui.screen.home.search.state.POIState
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.example.deucapstone2023.ui.theme.black
 import com.example.deucapstone2023.ui.theme.blue
@@ -35,14 +35,13 @@ fun SearchList(
 ) {
     LazyColumn(modifier = Modifier.padding(contentPadding)) {
         itemsIndexed(
-            items = poiItems,
-            key = null
+            items = poiItems
         ) { index, item ->
             SearchItem(
-                poiName = item.poiName,
-                poiAddress = item.poiAddress,
-                poiDistance = item.poiDistance,
-                poiBiz = item.poiBiz
+                poiName = item.name,
+                poiAddress = item.address,
+                poiDistance = item.distance,
+                poiBiz = item.biz
             )
             if (index != poiItems.lastIndex)
                 HorizontalDivider()
@@ -110,28 +109,36 @@ private fun PreviewSearchList() =
         SearchList(
             poiItems = listOf(
                 POIState(
-                    poiName = "당감댁",
-                    poiAddress = "부산 부산진구 냉정로 239 1층",
-                    poiDistance = "0.1km",
-                    poiBiz = "닭볶음탕"
+                    name = "당감댁",
+                    address = "부산 부산진구 냉정로 239 1층",
+                    distance = "0.1km",
+                    biz = "닭볶음탕",
+                    latitude = .0,
+                    longitude = .0
                 ),
                 POIState(
-                    poiName = "당감댁",
-                    poiAddress = "부산 부산진구 냉정로 239 1층",
-                    poiDistance = "0.1km",
-                    poiBiz = "닭볶음탕"
+                    name = "당감댁",
+                    address = "부산 부산진구 냉정로 239 1층",
+                    distance = "0.1km",
+                    biz = "닭볶음탕",
+                    latitude = .0,
+                    longitude = .0
                 ),
                 POIState(
-                    poiName = "당감댁",
-                    poiAddress = "부산 부산진구 냉정로 239 1층",
-                    poiDistance = "0.1km",
-                    poiBiz = "닭볶음탕"
+                    name = "당감댁",
+                    address = "부산 부산진구 냉정로 239 1층",
+                    distance = "0.1km",
+                    biz = "닭볶음탕",
+                    latitude = .0,
+                    longitude = .0
                 ),
                 POIState(
-                    poiName = "당감댁",
-                    poiAddress = "부산 부산진구 냉정로 239 1층",
-                    poiDistance = "0.1km",
-                    poiBiz = "닭볶음탕"
+                    name = "당감댁",
+                    address = "부산 부산진구 냉정로 239 1층",
+                    distance = "0.1km",
+                    biz = "닭볶음탕",
+                    latitude = .0,
+                    longitude = .0
                 )
             ),
             contentPadding = PaddingValues()

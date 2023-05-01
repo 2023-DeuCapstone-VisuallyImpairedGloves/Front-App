@@ -16,6 +16,8 @@ fun POIModel.toRequestDTO(appKey: String) = mutableMapOf<String, String>().apply
         put("centerLon", centerLon.toString())
     if(centerLat != .0)
         put("centerLat", centerLat.toString())
+    if(searchtypCd.isNotBlank())
+        put("searchtypCd", searchtypCd)
 }
 
 fun POIResponse.toPOIModel() = this.searchPoiInfo.pois.poi.map { it?.toPOIModel() ?: POIModel.getInitValues() }
