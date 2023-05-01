@@ -42,28 +42,36 @@ private fun PreviewSearchScreen() =
             searchUiState = SearchUiState(
                 listOf(
                     POIState(
-                        poiName = "당감댁",
-                        poiAddress = "부산 부산진구 냉정로 239 1층",
-                        poiDistance = "0.1km",
-                        poiBiz = "닭볶음탕"
+                        name = "당감댁",
+                        address = "부산 부산진구 냉정로 239 1층",
+                        distance = "0.1km",
+                        biz = "닭볶음탕",
+                        latitude = .0,
+                        longitude = .0
                     ),
                     POIState(
-                        poiName = "당감댁",
-                        poiAddress = "부산 부산진구 냉정로 239 1층",
-                        poiDistance = "0.1km",
-                        poiBiz = "닭볶음탕"
+                        name = "당감댁",
+                        address = "부산 부산진구 냉정로 239 1층",
+                        distance = "0.1km",
+                        biz = "닭볶음탕",
+                        latitude = .0,
+                        longitude = .0
                     ),
                     POIState(
-                        poiName = "당감댁",
-                        poiAddress = "부산 부산진구 냉정로 239 1층",
-                        poiDistance = "0.1km",
-                        poiBiz = "닭볶음탕"
+                        name = "당감댁",
+                        address = "부산 부산진구 냉정로 239 1층",
+                        distance = "0.1km",
+                        biz = "닭볶음탕",
+                        latitude = .0,
+                        longitude = .0
                     ),
                     POIState(
-                        poiName = "당감댁",
-                        poiAddress = "부산 부산진구 냉정로 239 1층",
-                        poiDistance = "0.1km",
-                        poiBiz = "닭볶음탕"
+                        name = "당감댁",
+                        address = "부산 부산진구 냉정로 239 1층",
+                        distance = "0.1km",
+                        biz = "닭볶음탕",
+                        latitude = .0,
+                        longitude = .0
                     )
                 ),
                 name = "",

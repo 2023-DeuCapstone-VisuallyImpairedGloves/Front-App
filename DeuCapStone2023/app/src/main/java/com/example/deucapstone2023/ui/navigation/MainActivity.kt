@@ -1,18 +1,15 @@
 package com.example.deucapstone2023.ui.navigation
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
-import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,7 +21,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,45 +28,51 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.deucapstone2023.R
-import com.example.deucapstone2023.ui.navigation.NavigationGraph
+import com.example.deucapstone2023.ui.screen.home.search.SearchViewModel
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
+import com.skt.tmap.TMapGpsManager
+import com.skt.tmap.TMapPoint
 import com.skt.tmap.TMapView
+import com.skt.tmap.overlay.TMapMarkerItem
+import com.skt.tmap.overlay.TMapMarkerItem2
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
-import kotlin.properties.Delegates
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject lateinit var tMapView: TMapView
-    private lateinit var locationManager: LocationManager
-    private lateinit var myLocationListener: LocationListener
+    private val searchViewModel: SearchViewModel by viewModels()
+    @Inject
+    lateinit var tMapView: TMapView
+    lateinit var tMapGpsManager: TMapGpsManager
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var textToSpeech: TextToSpeech
 
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if(permissions.any { permission -> permission.value.not() }) {
-            Toast.makeText(this,"권한 동의가 필요합니다.",Toast.LENGTH_LONG).show()
+        if (permissions.any { permission -> permission.value.not() }) {
+            Toast.makeText(this, "권한 동의가 필요합니다.", Toast.LENGTH_LONG).show()
             finish()
-        }
-        else {
+        } else {
             permissions.onEach { permission ->
-                when(permission.key) {
+                when (permission.key) {
                     Manifest.permission.RECORD_AUDIO -> {
                         speechRecognizer.startListening(
                             Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, this@MainActivity.packageName)
+                                putExtra(
+                                    RecognizerIntent.EXTRA_CALLING_PACKAGE,
+                                    this@MainActivity.packageName
+                                )
                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
                             }
                         )
                     }
+
                     Manifest.permission.ACCESS_FINE_LOCATION -> {
-                        setLocationListener()
+
                     }
                 }
             }
@@ -79,13 +81,31 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             DeuCapStone2023Theme {
                 this.Content()
             }
         }
         initState()
-        getMyLocation()
+        locationPermissionRequest.launch(PERMISSIONS)
+        tMapGpsManager.openGps()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                searchViewModel.searchUiState.collect { uiState ->
+                    uiState.poiList.forEach { poi ->
+                        Log.d(
+                            "test",
+                            "이름: ${poi.name}, 주소: ${poi.address}, 거리: ${poi.distance}, 업종명: ${poi.biz}"
+                        )
+                        searchViewModel.getPoiMarkers().forEach { marker ->
+                            tMapView.addTMapMarkerItem(marker)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -103,65 +123,90 @@ class MainActivity : ComponentActivity() {
             NavigationGraph(
                 navController = rememberNavController(),
                 tMapView = tMapView,
-                modifier = Modifier.padding(it)
+                modifier = Modifier.padding(it),
+                searchViewModel = searchViewModel
             )
         }
     }
 
     private fun initState() {
-        locationManager = this.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-
-        myLocationListener = LocationListener { location ->
-            tMapView.setCenterPoint(location.latitude, location.longitude)
-            tMapView.zoomLevel = 15
-
-            locationManager.removeUpdates(myLocationListener)
+        tMapGpsManager = TMapGpsManager(this).apply {
+            minTime = 1000
+            minDistance = 5F
+            provider = TMapGpsManager.PROVIDER_NETWORK
+            setOnLocationChangeListener { location ->
+                tMapView.apply {
+                    setCenterPoint(location.latitude, location.longitude)
+                    zoomLevel = 15
+                    if (getMarkerItem2FromID("UserPosition") != null)
+                        removeTMapMarkerItem2("UserPosition")
+                    addTMapMarkerItem(TMapMarkerItem().apply {
+                        tMapPoint = TMapPoint(location.latitude, location.longitude)
+                        icon = BitmapFactory.decodeResource(
+                            resources,
+                            R.drawable.ic_pin_red_a_midium
+                        )
+                        id = "내 위치"
+                        name = "내 위치"
+                    })
+                }
+            }
+            openGps()
         }
 
-
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-            setRecognitionListener(object: RecognitionListener {
+            setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
-                    TODO("Not yet implemented")
+
                 }
 
                 override fun onBeginningOfSpeech() {
-                    TODO("Not yet implemented")
+                    Log.d("test", "시작")
                 }
 
                 override fun onRmsChanged(rmsdB: Float) {
-                    TODO("Not yet implemented")
+
                 }
 
                 override fun onBufferReceived(buffer: ByteArray?) {
-                    TODO("Not yet implemented")
+
                 }
 
                 override fun onEndOfSpeech() {
-                    TODO("Not yet implemented")
+
                 }
 
                 override fun onError(error: Int) {
-                    TODO("Not yet implemented")
+                    voiceOutput("다시 말씀해 주실래요?")
                 }
 
                 override fun onResults(results: Bundle?) {
-                    TODO("Not yet implemented")
+                    val userSpeech =
+                        results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    searchViewModel.searchPlace(
+                        this@MainActivity.getString(R.string.T_Map_key),
+                        userSpeech?.get(0) ?: "당감댁"
+                    )
+                    if (userSpeech?.get(0) == null) {
+                        voiceOutput("다시 말씀해 주실래요?")
+                    } else {
+                        voiceOutput("사용자 입력 메세지는 ${userSpeech[0] ?: ""} 입니다.")
+                    }
                 }
 
                 override fun onPartialResults(partialResults: Bundle?) {
-                    TODO("Not yet implemented")
+
                 }
 
                 override fun onEvent(eventType: Int, params: Bundle?) {
-                    TODO("Not yet implemented")
+
                 }
 
             })
         }
 
         textToSpeech = TextToSpeech(this) { status ->
-            if(status != TextToSpeech.ERROR) {
+            if (status != TextToSpeech.ERROR) {
                 textToSpeech.apply {
                     language = Locale.KOREAN
                     setSpeechRate(1.0f)
@@ -172,28 +217,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun voiceOutput(message: String) {
-        textToSpeech.speak(message,TextToSpeech.QUEUE_FLUSH,null,null)
-    }
-
-    private fun getMyLocation() {
-        val isGpsEnable = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-
-        if (isGpsEnable) {
-            locationPermissionRequest.launch(PERMISSIONS)
-        }
-    }
-
-    @Suppress("MissingPermission")
-    private fun setLocationListener() {
-        val minTime: Long = 1500
-        val minDistance = 100f
-
-        with(locationManager) {
-            requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                minTime, minDistance, myLocationListener
-            )
-        }
+        textToSpeech.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     override fun onDestroy() {

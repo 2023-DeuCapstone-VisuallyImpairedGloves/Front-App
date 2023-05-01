@@ -1,17 +1,21 @@
 package com.example.deucapstone2023.ui.screen.home.search.state
 
 data class POIState(
-    val poiName: String,
-    val poiAddress: String,
-    val poiDistance: String,
-    val poiBiz: String
+    val name: String,
+    val address: String,
+    val distance: String,
+    val biz: String,
+    val latitude: Double,
+    val longitude: Double
 ) {
     companion object {
         fun getInitValues() = POIState(
-            poiName = "",
-            poiAddress = "",
-            poiDistance = "",
-            poiBiz = ""
+            name = "",
+            address = "",
+            distance = "",
+            biz = "",
+            latitude = .0,
+            longitude = .0
         )
     }
 }

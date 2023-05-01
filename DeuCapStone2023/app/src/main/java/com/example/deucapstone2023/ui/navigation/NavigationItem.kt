@@ -23,4 +23,11 @@ sealed class NavigationItem(
         icon = R.drawable.ic_setting,
         iconClicked = R.drawable.ic_setting_clicked
     )
+
+    object SEARCH: NavigationItem(
+        title = "설정",
+        route = "setting",
+        icon = R.drawable.ic_setting,
+        iconClicked = R.drawable.ic_setting_clicked
+    )
 }
