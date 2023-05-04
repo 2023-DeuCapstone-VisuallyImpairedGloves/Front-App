@@ -42,6 +42,7 @@ private fun PreviewSearchScreen() =
             searchUiState = SearchUiState(
                 listOf(
                     POIState(
+                        id = 0L,
                         name = "당감댁",
                         address = "부산 부산진구 냉정로 239 1층",
                         distance = "0.1km",
@@ -50,6 +51,7 @@ private fun PreviewSearchScreen() =
                         longitude = .0
                     ),
                     POIState(
+                        id = 0L,
                         name = "당감댁",
                         address = "부산 부산진구 냉정로 239 1층",
                         distance = "0.1km",
@@ -58,6 +60,7 @@ private fun PreviewSearchScreen() =
                         longitude = .0
                     ),
                     POIState(
+                        id = 0L,
                         name = "당감댁",
                         address = "부산 부산진구 냉정로 239 1층",
                         distance = "0.1km",
@@ -66,6 +69,7 @@ private fun PreviewSearchScreen() =
                         longitude = .0
                     ),
                     POIState(
+                        id = 0L,
                         name = "당감댁",
                         address = "부산 부산진구 냉정로 239 1층",
                         distance = "0.1km",
@@ -74,10 +78,9 @@ private fun PreviewSearchScreen() =
                         longitude = .0
                     )
                 ),
-                name = "",
                 latitude = .0,
                 longitude = .0,
-                searchType = ""
+                routeList = emptyList()
             ),
             title = "",
             onTitleChanged = {}

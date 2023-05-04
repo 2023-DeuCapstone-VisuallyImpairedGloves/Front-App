@@ -29,14 +29,19 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.screen.home.search.SearchViewModel
+import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
+import com.skt.tmap.TMapData
 import com.skt.tmap.TMapGpsManager
 import com.skt.tmap.TMapPoint
 import com.skt.tmap.TMapView
 import com.skt.tmap.overlay.TMapMarkerItem
 import com.skt.tmap.overlay.TMapMarkerItem2
+import com.skt.tmap.overlay.TMapPolyLine
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.lang.Exception
 import java.util.Locale
 import javax.inject.Inject
 
@@ -44,11 +49,13 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     private val searchViewModel: SearchViewModel by viewModels()
+
     @Inject
     lateinit var tMapView: TMapView
     lateinit var tMapGpsManager: TMapGpsManager
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var textToSpeech: TextToSpeech
+    private lateinit var pedestrianRoute: TMapPolyLine
 
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -60,15 +67,7 @@ class MainActivity : ComponentActivity() {
             permissions.onEach { permission ->
                 when (permission.key) {
                     Manifest.permission.RECORD_AUDIO -> {
-                        speechRecognizer.startListening(
-                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(
-                                    RecognizerIntent.EXTRA_CALLING_PACKAGE,
-                                    this@MainActivity.packageName
-                                )
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
-                            }
-                        )
+
                     }
 
                     Manifest.permission.ACCESS_FINE_LOCATION -> {
@@ -103,9 +102,116 @@ class MainActivity : ComponentActivity() {
                             tMapView.addTMapMarkerItem(marker)
                         }
                     }
+
+                    uiState.poiList.take(1).onEach { poi ->
+                        voiceOutput("도착지 ${poi.name} 의 주소는 ${poi.address} 입니다. 해당 도착지가 맞나요?")
+                        tMapView.addTMapMarkerItem(searchViewModel.makeMarker(poi))
+                        checkIsSpeaking()
+                        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+                            override fun onReadyForSpeech(params: Bundle?) {}
+                            override fun onBeginningOfSpeech() {}
+                            override fun onRmsChanged(rmsdB: Float) {}
+                            override fun onBufferReceived(buffer: ByteArray?) {}
+                            override fun onEndOfSpeech() {}
+                            override fun onError(error: Int) {}
+
+                            override fun onResults(results: Bundle?) {
+                                val userSpeech2 =
+                                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+
+                                if (userSpeech2 != null) {
+                                    if (userSpeech2[0].contains(Regex("^(?=.*(?:네|예|맞아|응)).+\$"))) {
+                                        // poi로 경로설정
+                                        try {
+                                            val pedestrianRoute = TMapData().findPathDataWithType(
+                                                TMapData.TMapPathType.PEDESTRIAN_PATH,
+                                                TMapPoint(uiState.latitude, uiState.longitude),
+                                                TMapPoint(poi.latitude, poi.longitude)
+                                            ).apply {
+                                                setID("pedestrianRoute")
+                                            }
+
+                                            tMapView.addTMapPolyLine(pedestrianRoute)
+                                        }
+                                        catch (e: Exception) {
+                                            Log.d("tests","error : ${e.message} occurred in ${e.printStackTrace()}")
+                                            Log.d("tests","slat: ${uiState.latitude} slon: ${uiState.longitude} dlat: ${poi.latitude} dlon: ${poi.longitude}")
+                                        }
+
+                                        searchViewModel.getRoutePedestrian(
+                                            appKey = getString(R.string.T_Map_key),
+                                            destinationPoiId = poi.id.toString(),
+                                            destinationLatitude = poi.latitude,
+                                            destinationLongitude = poi.longitude
+                                        )
+                                        startService(
+                                            Intent(
+                                                this@MainActivity,
+                                                SpeechService::class.java
+                                            )
+                                        )
+                                    } else {
+                                        voiceOutput("요청하신 경로는 없는 경로에요. 다시 말씀해주시겠어요?")
+                                        tMapView.removeTMapMarkerItem(poi.name)
+                                        startService(
+                                            Intent(
+                                                this@MainActivity,
+                                                SpeechService::class.java
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            override fun onPartialResults(partialResults: Bundle?) {}
+                            override fun onEvent(eventType: Int, params: Bundle?) {}
+                        })
+                        startListening()
+                    }
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        val place = intent?.getStringExtra("userMessage")
+
+        searchViewModel.searchPlace(
+            appKey = getString(R.string.T_Map_key),
+            place ?: "당감댁"
+        )
+
+        super.onNewIntent(intent)
+    }
+
+    private fun voiceOutput(message: String) {
+        textToSpeech.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
+        Log.d("tests", "msg: $message")
+    }
+
+    private suspend fun checkIsSpeaking() {
+        while (true) {
+            if (!textToSpeech.isSpeaking)
+                break
+            delay(100)
+        }
+    }
+
+    private fun startListening() {
+        speechRecognizer.startListening(
+            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(
+                    RecognizerIntent.EXTRA_CALLING_PACKAGE,
+                    packageName
+                )
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                putExtra(
+                    RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+                    1000
+                )
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
+            }
+        )
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -135,6 +241,7 @@ class MainActivity : ComponentActivity() {
             minDistance = 5F
             provider = TMapGpsManager.PROVIDER_NETWORK
             setOnLocationChangeListener { location ->
+                searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
                 tMapView.apply {
                     setCenterPoint(location.latitude, location.longitude)
                     zoomLevel = 15
@@ -146,64 +253,19 @@ class MainActivity : ComponentActivity() {
                             resources,
                             R.drawable.ic_pin_red_a_midium
                         )
-                        id = "내 위치"
-                        name = "내 위치"
+                        id = "UserPosition"
+                        name = "UserPosition"
                     })
                 }
+                if (tMapView.getPolyLineFromId("pedestrianRoute") != null) {
+
+
+                }
             }
-            openGps()
         }
+        startService(Intent(this, SpeechService::class.java))
 
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-            setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) {
-
-                }
-
-                override fun onBeginningOfSpeech() {
-                    Log.d("test", "시작")
-                }
-
-                override fun onRmsChanged(rmsdB: Float) {
-
-                }
-
-                override fun onBufferReceived(buffer: ByteArray?) {
-
-                }
-
-                override fun onEndOfSpeech() {
-
-                }
-
-                override fun onError(error: Int) {
-                    voiceOutput("다시 말씀해 주실래요?")
-                }
-
-                override fun onResults(results: Bundle?) {
-                    val userSpeech =
-                        results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    searchViewModel.searchPlace(
-                        this@MainActivity.getString(R.string.T_Map_key),
-                        userSpeech?.get(0) ?: "당감댁"
-                    )
-                    if (userSpeech?.get(0) == null) {
-                        voiceOutput("다시 말씀해 주실래요?")
-                    } else {
-                        voiceOutput("사용자 입력 메세지는 ${userSpeech[0] ?: ""} 입니다.")
-                    }
-                }
-
-                override fun onPartialResults(partialResults: Bundle?) {
-
-                }
-
-                override fun onEvent(eventType: Int, params: Bundle?) {
-
-                }
-
-            })
-        }
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
 
         textToSpeech = TextToSpeech(this) { status ->
             if (status != TextToSpeech.ERROR) {
@@ -216,19 +278,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun voiceOutput(message: String) {
-        textToSpeech.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
-    }
-
     override fun onDestroy() {
-        speechRecognizer.apply {
-            cancel()
-            destroy()
-        }
-        textToSpeech.apply {
-            stop()
-            shutdown()
-        }
+        tMapView.onDestroy()
+        tMapGpsManager.closeGps()
         super.onDestroy()
     }
 

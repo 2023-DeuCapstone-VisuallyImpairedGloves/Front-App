@@ -1,6 +1,7 @@
 package com.example.deucapstone2023.ui.screen.home.search.state
 
 data class POIState(
+    val id: Long,
     val name: String,
     val address: String,
     val distance: String,
@@ -10,6 +11,7 @@ data class POIState(
 ) {
     companion object {
         fun getInitValues() = POIState(
+            id = 0L,
             name = "",
             address = "",
             distance = "",

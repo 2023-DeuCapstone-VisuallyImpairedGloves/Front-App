@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">DeuCapStone2023</string>
     <string name="title_activity_main">MainActivity</string>
+    <string name="ai비서">AI 비서</string>
 </resources>
