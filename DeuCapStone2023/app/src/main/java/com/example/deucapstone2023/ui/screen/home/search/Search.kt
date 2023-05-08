@@ -12,7 +12,7 @@ import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 
 @Composable
 fun Search(
-    searchUiState: SearchUiState,
+    poiList: List<POIState>,
     title: String,
     onTitleChanged: (String) -> Unit
 ) {
@@ -28,7 +28,7 @@ fun Search(
         modifier = Modifier.fillMaxSize()
     ) {
         SearchList(
-            poiItems = searchUiState.poiList,
+            poiItems = poiList,
             contentPadding = it
         )
     }
@@ -39,48 +39,44 @@ fun Search(
 private fun PreviewSearchScreen() =
     DeuCapStone2023Theme {
         Search(
-            searchUiState = SearchUiState(
-                listOf(
-                    POIState(
-                        id = 0L,
-                        name = "당감댁",
-                        address = "부산 부산진구 냉정로 239 1층",
-                        distance = "0.1km",
-                        biz = "닭볶음탕",
-                        latitude = .0,
-                        longitude = .0
-                    ),
-                    POIState(
-                        id = 0L,
-                        name = "당감댁",
-                        address = "부산 부산진구 냉정로 239 1층",
-                        distance = "0.1km",
-                        biz = "닭볶음탕",
-                        latitude = .0,
-                        longitude = .0
-                    ),
-                    POIState(
-                        id = 0L,
-                        name = "당감댁",
-                        address = "부산 부산진구 냉정로 239 1층",
-                        distance = "0.1km",
-                        biz = "닭볶음탕",
-                        latitude = .0,
-                        longitude = .0
-                    ),
-                    POIState(
-                        id = 0L,
-                        name = "당감댁",
-                        address = "부산 부산진구 냉정로 239 1층",
-                        distance = "0.1km",
-                        biz = "닭볶음탕",
-                        latitude = .0,
-                        longitude = .0
-                    )
+            poiList =
+            listOf(
+                POIState(
+                    id = 0L,
+                    name = "당감댁",
+                    address = "부산 부산진구 냉정로 239 1층",
+                    distance = "0.1km",
+                    biz = "닭볶음탕",
+                    latitude = .0,
+                    longitude = .0
                 ),
-                latitude = .0,
-                longitude = .0,
-                routeList = emptyList()
+                POIState(
+                    id = 0L,
+                    name = "당감댁",
+                    address = "부산 부산진구 냉정로 239 1층",
+                    distance = "0.1km",
+                    biz = "닭볶음탕",
+                    latitude = .0,
+                    longitude = .0
+                ),
+                POIState(
+                    id = 0L,
+                    name = "당감댁",
+                    address = "부산 부산진구 냉정로 239 1층",
+                    distance = "0.1km",
+                    biz = "닭볶음탕",
+                    latitude = .0,
+                    longitude = .0
+                ),
+                POIState(
+                    id = 0L,
+                    name = "당감댁",
+                    address = "부산 부산진구 냉정로 239 1층",
+                    distance = "0.1km",
+                    biz = "닭볶음탕",
+                    latitude = .0,
+                    longitude = .0
+                )
             ),
             title = "",
             onTitleChanged = {}

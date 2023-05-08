@@ -1,22 +1,15 @@
 package com.example.deucapstone2023.ui.service
 
 import android.content.Intent
-import android.location.Location
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
-import android.util.Log
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import com.example.deucapstone2023.R
 import com.example.deucapstone2023.domain.usecase.POIUsecase
 import com.example.deucapstone2023.ui.navigation.MainActivity
-import com.example.deucapstone2023.ui.screen.home.search.SearchUiState
-import com.example.deucapstone2023.ui.screen.home.search.state.toPOIModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -122,11 +115,15 @@ class SpeechService : LifecycleService() {
                     userSpeech[0].contains("안내") -> {
                         startActivity(Intent(this@SpeechService,MainActivity::class.java).apply{
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            putExtra("userMessage",userSpeech[0].split("로")[0])
+                            putExtra("userMessage",userSpeech[0].split(Regex("로|으로"))[0])
                         })
                         stopSelf()
                         // enabled.update { false }
                         // startListening()
+                    }
+                    else -> {
+                        enabled.update { false }
+                        startListening()
                     }
                 }
             }

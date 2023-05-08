@@ -4,7 +4,7 @@ import com.example.deucapstone2023.domain.model.POIModel
 import com.example.deucapstone2023.domain.model.RouteModel
 import com.example.deucapstone2023.ui.screen.home.search.SearchUiState
 
-fun SearchUiState.toPOIModel(place: String) = POIModel(
+/*fun SearchUiState.toPOIModel(place: String) = POIModel(
     name = place,
     centerLat = latitude,
     centerLon = longitude,
@@ -13,7 +13,7 @@ fun SearchUiState.toPOIModel(place: String) = POIModel(
     bizName = "",
     address = "",
     id = 0L
-)
+)*/
 
 fun POIModel.toPOIState() = POIState(
     id = id,

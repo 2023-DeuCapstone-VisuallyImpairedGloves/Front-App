@@ -13,7 +13,7 @@ import retrofit2.http.QueryMap
 
 interface ApiService {
     @GET("pois/")
-    suspend fun getPOISearch(@QueryMap poiRequest: Map<String, String>): POIResponse
+    suspend fun getPOISearch(@QueryMap poiRequest: Map<String, String>): POIResponse?
 
     @POST("routes/pedestrian")
     suspend fun getRoutePedestrian(
