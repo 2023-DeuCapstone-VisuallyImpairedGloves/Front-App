@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 
 data class RouteResponse(
     @SerializedName("features")
-    val features: List<Feature?>?,
+    val features: List<Feature>?,
     @SerializedName("type")
     val type: String
 )
@@ -21,7 +21,7 @@ data class Feature(
 
 data class Geometry(
     @SerializedName("coordinates")
-    val coordinates: String?,
+    val coordinates: List<Any>?,
     @SerializedName("type")
     val type: String?
 )
@@ -44,7 +44,7 @@ data class Properties(
     @SerializedName("guidePointName")
     val guidePointName: String?,
     @SerializedName("index")
-    val index: String?,
+    val index: Int?,
     @SerializedName("intersectionName")
     val intersectionName: String?,
     @SerializedName("lineIndex")

@@ -1,20 +1,21 @@
-package com.example.deucapstone2023.ui.screen.home.search
+package com.example.deucapstone2023.ui.screen.temp
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.deucapstone2023.ui.component.DefaultLayout
-import com.example.deucapstone2023.ui.screen.home.search.component.SearchAppBar
-import com.example.deucapstone2023.ui.screen.home.search.component.SearchList
-import com.example.deucapstone2023.ui.screen.home.search.state.POIState
+import com.example.deucapstone2023.ui.screen.temp.component.SearchAppBar
+import com.example.deucapstone2023.ui.screen.temp.component.SearchList
+import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 
 @Composable
-fun Search(
+fun SearchScreen(
     poiList: List<POIState>,
     title: String,
-    onTitleChanged: (String) -> Unit
+    onTitleChanged: (String) -> Unit,
+    onNavigateToHome: () -> Unit
 ) {
     DefaultLayout(
         topBar = {
@@ -22,7 +23,7 @@ fun Search(
                 title = title,
                 hintMessage = "장소, 버스, 지하철, 주소 검색",
                 onTitleChanged = onTitleChanged,
-                onNavigateClick = {}
+                onNavigateToHome = onNavigateToHome
             )
         },
         modifier = Modifier.fillMaxSize()
@@ -38,7 +39,7 @@ fun Search(
 @Preview(showBackground = true)
 private fun PreviewSearchScreen() =
     DeuCapStone2023Theme {
-        Search(
+        SearchScreen(
             poiList =
             listOf(
                 POIState(
@@ -79,6 +80,7 @@ private fun PreviewSearchScreen() =
                 )
             ),
             title = "",
-            onTitleChanged = {}
+            onTitleChanged = {},
+            onNavigateToHome = {}
         )
     }

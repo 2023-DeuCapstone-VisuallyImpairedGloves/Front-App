@@ -1,7 +1,16 @@
 package com.example.deucapstone2023.ui.base
 
+import androidx.compose.runtime.Stable
+
+@Stable
 enum class TurnType(val code: Int, val desc: String) {
-    NO_GUIDANCE(code = 7, desc = "안내 없음"),
+    NO_GUIDANCE1(code = 1, desc = "안내 없음"),
+    NO_GUIDANCE2(code = 2, desc = "안내 없음"),
+    NO_GUIDANCE3(code = 3, desc = "안내 없음"),
+    NO_GUIDANCE4(code = 4, desc = "안내 없음"),
+    NO_GUIDANCE5(code = 5, desc = "안내 없음"),
+    NO_GUIDANCE6(code = 6, desc = "안내 없음"),
+    NO_GUIDANCE7(code = 7, desc = "안내 없음"),
     GO_STRAIGHT(code = 11, desc = "직진"),
     TURN_LEFT(code = 12, desc = "좌회전"),
     TURN_RIGHT(code = 13, desc = "우회전"),
@@ -25,5 +34,9 @@ enum class TurnType(val code: Int, val desc: String) {
     CROSSWALK_2(code = 216, desc = "2시 방향 횡단보도"),
     CROSSWALK_4(code = 217, desc = "4시 방향 횡단보도"),
     ELEVATOR(code = 218, desc = "엘리베이터"),
-    GO_STRAIGHT_TEMP(code = 233, desc = "직진 임시")
+    GO_STRAIGHT_TEMP(code = 233, desc = "직진 임시");
+
+    companion object {
+        fun getType(code: Int) = TurnType.values().first { it.code == code }
+    }
 }

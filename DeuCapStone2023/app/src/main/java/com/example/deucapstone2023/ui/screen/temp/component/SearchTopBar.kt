@@ -1,18 +1,16 @@
-package com.example.deucapstone2023.ui.screen.home.search.component
+package com.example.deucapstone2023.ui.screen.temp.component
 
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,7 +28,7 @@ fun SearchAppBar(
     hintMessage: String? = null,
     modifier: Modifier = Modifier,
     onTitleChanged: (String) -> Unit,
-    onNavigateClick: () -> Unit
+    onNavigateToHome: () -> Unit
 ) {
     val focusRequester by remember {
         mutableStateOf(FocusRequester())
@@ -59,7 +57,7 @@ fun SearchAppBar(
             )
         },
         tailIcon = {
-            IconButton(onClick = onNavigateClick) {
+            IconButton(onClick = onNavigateToHome) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_navi),
                     contentDescription = "IconNavi"
@@ -77,6 +75,6 @@ private fun PreviewHomeAppBar() =
             title = "",
             hintMessage = "장소, 버스, 지하철, 주소 검색",
             onTitleChanged = {},
-            onNavigateClick = {}
+            onNavigateToHome = {}
         )
     }
