@@ -1,6 +1,10 @@
 package com.example.deucapstone2023.ui.base
 
+import androidx.compose.runtime.Stable
+
+@Stable
 enum class FacilityType(val code: Int,val desc:String) {
+    INIT(code = 0, desc = "초기값"),
     BRIDGE(code = 1, desc = "교량"),
     TUNNEL(code = 2, desc = "터널"),
     oVERPASS(code = 3, desc = "고가도로"),
@@ -9,5 +13,9 @@ enum class FacilityType(val code: Int,val desc:String) {
     UNDERPASS(code = 14, desc = "지하보도"),
     CROSSWALK(code = 15, desc = "횡단보도"),
     LARGE_FACILITIES(code = 16, desc = "대형 시설물 이동통로"),
-    STAIR(code = 17, desc = "계단")
+    STAIR(code = 17, desc = "계단");
+
+    companion object {
+        fun getType(code: Int) = values().first { it.code == code }
+    }
 }

@@ -1,8 +1,11 @@
-package com.example.deucapstone2023.ui.screen.home.search.state
+package com.example.deucapstone2023.ui.screen.search.state
 
+import com.example.deucapstone2023.domain.model.LineModel
 import com.example.deucapstone2023.domain.model.POIModel
 import com.example.deucapstone2023.domain.model.RouteModel
-import com.example.deucapstone2023.ui.screen.home.search.SearchUiState
+import com.example.deucapstone2023.ui.base.FacilityType
+import com.example.deucapstone2023.ui.base.PointType
+import com.example.deucapstone2023.ui.base.TurnType
 
 /*fun SearchUiState.toPOIModel(place: String) = POIModel(
     name = place,
@@ -32,13 +35,17 @@ fun List<RouteModel>.toRouteListState() = this.map { it.toRouteState() }
 fun RouteModel.toRouteState() = RouteState(
     name = name,
     description = description,
-    turnType = turnType,
-    pointType = pointType,
-    facilityType = facilityType,
+    turnType = TurnType.getType(turnType),
+    pointType = PointType.getType(pointType),
+    facilityType = FacilityType.getType(facilityType),
     startLatitude = startLatitude,
     startLongitude = startLongitude,
     destinationLatitude = destinationLatitude,
     destinationLongitude = destinationLongitude,
     totalDistance = totalDistance,
-    totalTime = totalTime
+    totalTime = totalTime,
+    lineInfo = lineInfo.toLineListState()
 )
+
+fun List<LineModel>.toLineListState() = this.map { it.toLineState() }
+fun LineModel.toLineState() = Location(latitude = this.latitude, longitude = this.longitude)

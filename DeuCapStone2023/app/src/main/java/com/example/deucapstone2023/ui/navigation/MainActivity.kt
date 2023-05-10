@@ -13,6 +13,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -21,10 +22,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.example.deucapstone2023.R
-import com.example.deucapstone2023.ui.screen.home.search.CommonRecognitionListener
-import com.example.deucapstone2023.ui.screen.home.search.SearchViewModel
+import com.example.deucapstone2023.ui.base.CommonRecognitionListener
+import com.example.deucapstone2023.ui.screen.temp.SearchViewModel
 import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.skt.tmap.TMapGpsManager
@@ -33,6 +35,7 @@ import com.skt.tmap.TMapView
 import com.skt.tmap.overlay.TMapMarkerItem
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @AndroidEntryPoint
@@ -68,9 +71,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        locationPermissionRequest.launch(PERMISSIONS)
-        initState()
+        lifecycleScope.launch {
+            requireLaunchingPermission()
+            initState()
+        }
         setContent {
             DeuCapStone2023Theme {
                 this.Content()
@@ -98,7 +102,7 @@ class MainActivity : ComponentActivity() {
         while (true) {
             if (!textToSpeech.isSpeaking)
                 break
-            delay(100)
+            delay(50)
         }
     }
 
@@ -131,30 +135,36 @@ class MainActivity : ComponentActivity() {
         bottomNavigationViewModel: NavigationViewModel = hiltViewModel()
     ) {
         val bottomState by bottomNavigationViewModel.bottomBarState.collectAsStateWithLifecycle()
+        val navController = rememberNavController()
         Scaffold(
             bottomBar = {
                 if (bottomState)
-                    BottomNavigationGraph(navController = rememberNavController())
+                    BottomNavigationGraph(navController = navController)
             }
         ) {
-            NavigationGraph(
-                tMapView = tMapView,
-                navController = rememberNavController(),
-                modifier = Modifier.padding(it),
-                searchViewModel = searchViewModel,
-                startListening = { startListening() },
-                checkIsSpeaking = { checkIsSpeaking() },
-                voiceOutput = { message -> voiceOutput(message) },
-                setSpeechRecognizerListener = { listener -> setSpeechRecognizerListener(listener) }
-            )
+            Box(modifier = Modifier.padding(it)) {
+                NavigationGraph(
+                    tMapView = tMapView,
+                    searchViewModel = searchViewModel,
+                    navController = navController,
+                    startListening = { startListening() },
+                    checkIsSpeaking = { checkIsSpeaking() },
+                    voiceOutput = { message -> voiceOutput(message) },
+                    setSpeechRecognizerListener = { listener -> setSpeechRecognizerListener(listener) }
+                )
+            }
         }
+    }
+
+    private suspend fun requireLaunchingPermission() {
+        locationPermissionRequest.launch(PERMISSIONS)
     }
 
     private fun initState() {
         tMapGpsManager = TMapGpsManager(this).apply {
-            minTime = 1000
+            minTime = 3000
             minDistance = 5F
-            provider = TMapGpsManager.PROVIDER_GPS
+            provider = TMapGpsManager.PROVIDER_NETWORK
             setOnLocationChangeListener { location ->
                 searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
                 tMapView.apply {

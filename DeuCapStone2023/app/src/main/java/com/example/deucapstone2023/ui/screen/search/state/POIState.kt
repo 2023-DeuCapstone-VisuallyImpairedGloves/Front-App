@@ -1,5 +1,8 @@
-package com.example.deucapstone2023.ui.screen.home.search.state
+package com.example.deucapstone2023.ui.screen.search.state
 
+import androidx.compose.runtime.Stable
+
+@Stable
 data class POIState(
     val id: Long,
     val name: String,

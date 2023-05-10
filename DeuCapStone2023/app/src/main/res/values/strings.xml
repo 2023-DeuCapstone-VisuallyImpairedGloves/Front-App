@@ -2,4 +2,5 @@
     <string name="app_name">DeuCapStone2023</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="ai비서">AI 비서</string>
+    <string name="보행자경로">보행자 경로</string>
 </resources>
