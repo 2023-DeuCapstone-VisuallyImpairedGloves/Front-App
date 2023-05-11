@@ -26,6 +26,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
+import com.example.deucapstone2023.ui.screen.search.state.Location
+import com.example.deucapstone2023.ui.screen.search.state.RouteState
+import com.example.deucapstone2023.ui.screen.temp.SearchEventFlow
 import com.example.deucapstone2023.ui.screen.temp.SearchViewModel
 import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
@@ -162,16 +165,16 @@ class MainActivity : ComponentActivity() {
 
     private fun initState() {
         tMapGpsManager = TMapGpsManager(this).apply {
-            minTime = 3000
+            minTime = 8000
             minDistance = 5F
-            provider = TMapGpsManager.PROVIDER_NETWORK
+            provider = TMapGpsManager.PROVIDER_GPS
             setOnLocationChangeListener { location ->
                 searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
                 tMapView.apply {
                     setCenterPoint(location.latitude, location.longitude)
                     zoomLevel = 15
-                    if (getMarkerItem2FromID("UserPosition") != null)
-                        removeTMapMarkerItem2("UserPosition")
+                    if (getMarkerItemFromId("UserPosition") != null)
+                        removeTMapMarkerItem("UserPosition")
                     addTMapMarkerItem(TMapMarkerItem().apply {
                         tMapPoint = TMapPoint(location.latitude, location.longitude)
                         icon = BitmapFactory.decodeResource(
@@ -182,12 +185,48 @@ class MainActivity : ComponentActivity() {
                         name = "UserPosition"
                     })
                 }
-                if (tMapView.getPolyLineFromId("pedestrianRoute") != null) {
-
-
-                }
             }
         }
+        /*lifecycleScope.launch {
+            var searchUiState = Location.getInitValues()
+            var flag2 = 0
+            var flag = false
+            launch {
+                searchViewModel.searchUiState.collect { state ->
+                    searchUiState = state.location
+                    flag2 = state.routeIndex
+                    if(state.location.latitude != 0.0)
+                        tMapView.apply {
+                            if (getMarkerItemFromId("UserPosition") != null)
+                                removeTMapMarkerItem("UserPosition")
+                            addTMapMarkerItem(TMapMarkerItem().apply {
+                                tMapPoint = TMapPoint(state.location.latitude, state.location.longitude)
+                                icon = BitmapFactory.decodeResource(
+                                    resources,
+                                    R.drawable.ic_pin_red_a_midium
+                                )
+                                id = "UserPosition"
+                                name = "UserPosition"
+                            })
+                        }
+                    if(state.location.latitude != 0.0)
+                        flag = true
+                }
+            }
+            launch {
+                while(true) {
+                    while (flag) {
+                        if(flag2 == 0)
+                            searchViewModel::setUserLocation.invoke(searchUiState.latitude +0.00005000000000 , searchUiState.longitude - 0.00000500000000 )
+                        else
+                            searchViewModel::setUserLocation.invoke(searchUiState.latitude, searchUiState.longitude - 0.00003000000000 )
+                        delay(8000)
+                    }
+                    delay(1000)
+                }
+            }
+
+        }*/
         tMapGpsManager.openGps()
         startService(Intent(this, SpeechService::class.java))
 

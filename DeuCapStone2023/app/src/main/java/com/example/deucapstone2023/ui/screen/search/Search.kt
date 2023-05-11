@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -15,11 +17,13 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.allViews
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.component.DefaultLayout
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
+import com.example.deucapstone2023.ui.screen.search.component.HomeAppBar
 import com.example.deucapstone2023.ui.screen.temp.SearchEventFlow
 import com.example.deucapstone2023.ui.screen.temp.SearchUiState
 import com.example.deucapstone2023.ui.screen.search.state.POIState
@@ -39,22 +43,23 @@ fun HomeScreen(
     searchEventFlow: SearchEventFlow,
     searchUiState: SearchUiState,
     tMapView: TMapView,
+    title: String,
+    onTitleChanged: (String) -> Unit,
+    onNavigateToNaviScreen: () -> Unit,
     startListening: () -> Unit,
     checkIsSpeaking: suspend () -> Unit,
     voiceOutput: (String) -> Unit,
     makeMarker: (POIState) -> TMapMarkerItem,
     getRoutePedestrian: (String, String, Double, Double) -> Unit,
     setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
-    navigateRouteOnMap: (List<RouteState>, (String) -> Unit) -> Unit
+    navigateRouteOnMap: ((String) -> Unit) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
 
     LaunchedEffect(key1 = searchUiState.location) {
-        if (searchEventFlow is SearchEventFlow.RouteList)
-            navigateRouteOnMap(
-                searchEventFlow.routeList,
-            ) { message ->
+        if(searchUiState.routeList.isNotEmpty())
+            navigateRouteOnMap { message ->
                 voiceOutput(message)
             }
     }
@@ -78,6 +83,7 @@ fun HomeScreen(
                 }
 
                 tMapView.apply {
+                    removeTMapPolyLine("pedestrianRoute")
                     addTMapPolyLine(polyLine)
                 }
             }
@@ -90,9 +96,7 @@ fun HomeScreen(
                     poi.id.toString(),
                     poi.latitude,
                     poi.longitude
-                )
-                tMapView.removeTMapPolyLine("pedestrianRoute")*/
-
+                )*/
 
                 if (searchEventFlow.poiList.isEmpty()) {
                     voiceOutput("해당 도착지의 정보를 조회할 수 없어요. 다시 말씀해 주시겠어요?")
@@ -124,7 +128,6 @@ fun HomeScreen(
                                         tMapView.apply {
                                             removeTMapMarkerItem(poi.name)
                                             addTMapMarkerItem(makeMarker(poi))
-                                            removeTMapPolyLine("pedestrianRoute")
                                         }
 
                                         getRoutePedestrian(
@@ -153,6 +156,8 @@ fun HomeScreen(
                     )
                 )
             }
+
+            else -> {}
         }
     }
 
@@ -169,6 +174,16 @@ fun HomeScreen(
                     }
                 },
                 modifier = Modifier.align(Alignment.Center)
+            )
+            HomeAppBar(
+                title = title,
+                hintMessage = "장소, 버스, 지하철, 주소 검색",
+                onTitleChanged = onTitleChanged,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                onNavigateToNaviScreen = onNavigateToNaviScreen
             )
         }
     }
@@ -189,7 +204,10 @@ private fun PreviewHomeScreen() {
             makeMarker = { TMapMarkerItem() },
             getRoutePedestrian = { _, _, _, _ -> },
             setSpeechRecognizerListener = {},
-            navigateRouteOnMap = { _, _ -> }
+            navigateRouteOnMap = {},
+            title = "",
+            onTitleChanged = {},
+            onNavigateToNaviScreen = {},
         )
     }
 }

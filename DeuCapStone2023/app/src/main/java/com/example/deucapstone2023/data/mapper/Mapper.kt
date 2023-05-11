@@ -76,8 +76,8 @@ fun RouteResponse.toRouteModel() = this.run {
 
                 val location = feature.geometry.coordinates
 
-                startLatitude = location?.get(0) as Double
-                startLongitude = location.get(1) as Double
+                startLatitude = location?.get(1) as Double
+                startLongitude = location.get(0) as Double
                 routeDescription = feature.properties?.description ?: ""
                 routeTurnType = feature.properties?.turnType ?: 1
                 routePointType = feature.properties?.pointType ?: ""
@@ -110,8 +110,8 @@ fun RouteResponse.toRouteModel() = this.run {
 
             "LineString" -> {
                 val location = feature.geometry.coordinates
-                destinationLatitude = (((location?.last() ?: .0) as List<*>?)?.get(0) ?: .0) as Double
-                destinationLongitude = (((location?.last() ?: .0) as List<*>?)?.get(1) ?: .0) as Double
+                destinationLatitude = (((location?.last() ?: .0) as List<*>?)?.get(1) ?: .0) as Double
+                destinationLongitude = (((location?.last() ?: .0) as List<*>?)?.get(0) ?: .0) as Double
                 routeName = feature.properties?.name ?: ""
                 routeFacilityType = if (feature.properties?.facilityType?.isNotBlank() == true) feature.properties.facilityType.toInt() ?: 0 else 0
                 totalDistance = feature.properties?.distance ?: 0
