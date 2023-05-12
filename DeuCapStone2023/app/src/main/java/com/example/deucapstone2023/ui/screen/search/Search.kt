@@ -2,7 +2,6 @@ package com.example.deucapstone2023.ui.screen.search
 
 import android.content.Intent
 import android.speech.SpeechRecognizer
-import android.util.Log
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.layout.Box
@@ -19,15 +18,11 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.allViews
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.component.DefaultLayout
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
 import com.example.deucapstone2023.ui.screen.search.component.HomeAppBar
-import com.example.deucapstone2023.ui.screen.temp.SearchEventFlow
-import com.example.deucapstone2023.ui.screen.temp.SearchUiState
 import com.example.deucapstone2023.ui.screen.search.state.POIState
-import com.example.deucapstone2023.ui.screen.search.state.RouteState
 import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.example.deucapstone2023.ui.theme.blue
@@ -50,8 +45,9 @@ fun HomeScreen(
     checkIsSpeaking: suspend () -> Unit,
     voiceOutput: (String) -> Unit,
     makeMarker: (POIState) -> TMapMarkerItem,
-    getRoutePedestrian: (String, String, Double, Double) -> Unit,
+    getRoutePedestrian: (String) -> Unit,
     setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
+    setDestinationInfo: (POIState) -> Unit,
     navigateRouteOnMap: ((String) -> Unit) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -89,15 +85,6 @@ fun HomeScreen(
             }
 
             is SearchEventFlow.POIList -> {
-                /*
-                val poi = searchEventFlow.poiList.first()
-                getRoutePedestrian(
-                    context.getString(R.string.T_Map_key),
-                    poi.id.toString(),
-                    poi.latitude,
-                    poi.longitude
-                )*/
-
                 if (searchEventFlow.poiList.isEmpty()) {
                     voiceOutput("해당 도착지의 정보를 조회할 수 없어요. 다시 말씀해 주시겠어요?")
                 } else {
@@ -125,17 +112,14 @@ fun HomeScreen(
                                         // poi로 경로설정
                                         repeatFlag = false
 
+                                        setDestinationInfo(poi)
+
                                         tMapView.apply {
                                             removeTMapMarkerItem(poi.name)
                                             addTMapMarkerItem(makeMarker(poi))
                                         }
 
-                                        getRoutePedestrian(
-                                            context.getString(R.string.T_Map_key),
-                                            poi.id.toString(),
-                                            poi.latitude,
-                                            poi.longitude
-                                        )
+                                        getRoutePedestrian(context.getString(R.string.T_Map_key))
 
                                     } else if (userSpeech2[0].contains(Regex("^(?=.*(?:아니|틀렸)).+\$"))) {
                                         if (index == 3) {
@@ -156,8 +140,6 @@ fun HomeScreen(
                     )
                 )
             }
-
-            else -> {}
         }
     }
 
@@ -202,8 +184,9 @@ private fun PreviewHomeScreen() {
             checkIsSpeaking = {},
             voiceOutput = {},
             makeMarker = { TMapMarkerItem() },
-            getRoutePedestrian = { _, _, _, _ -> },
+            getRoutePedestrian = {},
             setSpeechRecognizerListener = {},
+            setDestinationInfo = {},
             navigateRouteOnMap = {},
             title = "",
             onTitleChanged = {},

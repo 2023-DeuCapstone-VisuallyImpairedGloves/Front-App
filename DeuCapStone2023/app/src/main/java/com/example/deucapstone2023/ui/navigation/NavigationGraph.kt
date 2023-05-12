@@ -6,14 +6,12 @@ import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -29,13 +27,9 @@ import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.screen.search.HomeScreen
 import com.example.deucapstone2023.ui.screen.search.HomeViewModel
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
-import com.example.deucapstone2023.ui.screen.temp.SearchEventFlow
-import com.example.deucapstone2023.ui.screen.temp.SearchViewModel
-import com.skt.tmap.MapUtils
+import com.example.deucapstone2023.ui.screen.search.SearchEventFlow
+import com.example.deucapstone2023.ui.screen.search.SearchViewModel
 import com.skt.tmap.TMapView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 
 @Composable
@@ -61,6 +55,7 @@ fun NavigationGraph(
             )
             val searchUiState by searchViewModel.searchUiState.collectAsStateWithLifecycle()
             val context = LocalContext.current
+            val homeUiState by homeViewModel.homeUiState.collectAsStateWithLifecycle()
 
             HomeScreen(
                 searchEventFlow = searchEventFlow,
@@ -72,11 +67,12 @@ fun NavigationGraph(
                 makeMarker = searchViewModel::makeMarker,
                 getRoutePedestrian = searchViewModel::getRoutePedestrian,
                 setSpeechRecognizerListener = setSpeechRecognizerListener,
+                setDestinationInfo = searchViewModel::setDestinationInfo,
                 navigateRouteOnMap = searchViewModel::navigateRouteOnMap,
-                title = "",
+                title = homeUiState.title,
                 onTitleChanged = homeViewModel::setTitle,
                 onNavigateToNaviScreen = {
-                    searchViewModel::searchPlace.invoke(context.getString(R.string.T_Map_key),"스타벅스")
+                    searchViewModel::searchPlaceOnTyping.invoke(context.getString(R.string.T_Map_key),homeUiState.title)
                 },
             )
         }
