@@ -1,7 +1,6 @@
-package com.example.deucapstone2023.ui.screen.home
+package com.example.deucapstone2023.ui.screen.search
 
 import androidx.lifecycle.ViewModel
-import com.skt.tmap.TMapView
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
