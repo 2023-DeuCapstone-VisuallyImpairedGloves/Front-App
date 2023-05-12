@@ -1,4 +1,4 @@
-package com.example.deucapstone2023.ui.screen.temp.component
+package com.example.deucapstone2023.ui.screen.home.search.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -21,7 +21,7 @@ import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.component.HorizontalDivider
 import com.example.deucapstone2023.ui.component.HorizontalSpacer
 import com.example.deucapstone2023.ui.component.VerticalSpacer
-import com.example.deucapstone2023.ui.screen.search.state.POIState
+import com.example.deucapstone2023.ui.screen.home.search.state.POIState
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.example.deucapstone2023.ui.theme.black
 import com.example.deucapstone2023.ui.theme.blue
@@ -109,7 +109,6 @@ private fun PreviewSearchList() =
         SearchList(
             poiItems = listOf(
                 POIState(
-                    id = 0L,
                     name = "당감댁",
                     address = "부산 부산진구 냉정로 239 1층",
                     distance = "0.1km",
@@ -118,7 +117,6 @@ private fun PreviewSearchList() =
                     longitude = .0
                 ),
                 POIState(
-                    id = 0L,
                     name = "당감댁",
                     address = "부산 부산진구 냉정로 239 1층",
                     distance = "0.1km",
@@ -127,7 +125,6 @@ private fun PreviewSearchList() =
                     longitude = .0
                 ),
                 POIState(
-                    id = 0L,
                     name = "당감댁",
                     address = "부산 부산진구 냉정로 239 1층",
                     distance = "0.1km",
@@ -136,7 +133,6 @@ private fun PreviewSearchList() =
                     longitude = .0
                 ),
                 POIState(
-                    id = 0L,
                     name = "당감댁",
                     address = "부산 부산진구 냉정로 239 1층",
                     distance = "0.1km",
