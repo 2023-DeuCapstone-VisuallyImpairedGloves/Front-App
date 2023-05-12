@@ -1,7 +1,6 @@
 package com.example.deucapstone2023.domain.model
 
 data class POIModel(
-    val id: Long,
     val name: String,
     val searchtypCd: String,
     val radius: String,
@@ -12,7 +11,6 @@ data class POIModel(
 ) {
     companion object {
         fun getInitValues() = POIModel(
-            id = 0L,
             name = "",
             address = "",
             radius = "",
