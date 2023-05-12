@@ -11,49 +11,63 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.deucapstone2023.ui.screen.home.Home
-import com.example.deucapstone2023.ui.screen.home.HomeViewModel
-import com.example.deucapstone2023.ui.screen.home.search.SearchViewModel
+import com.example.deucapstone2023.ui.screen.search.HomeScreen
+import com.example.deucapstone2023.ui.screen.search.HomeViewModel
+import com.example.deucapstone2023.ui.base.CommonRecognitionListener
+import com.example.deucapstone2023.ui.screen.temp.SearchEventFlow
+import com.example.deucapstone2023.ui.screen.temp.SearchViewModel
 import com.skt.tmap.TMapView
+
 
 @Composable
 fun NavigationGraph(
-    modifier: Modifier,
-    navController: NavHostController,
     tMapView: TMapView,
+    navController: NavHostController,
     homeViewModel: HomeViewModel = hiltViewModel(),
-    searchViewModel: SearchViewModel
+    searchViewModel: SearchViewModel,
+    startListening: () -> Unit,
+    checkIsSpeaking: suspend () -> Unit,
+    voiceOutput: (String) -> Unit,
+    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit
 ) {
     NavHost(
         navController = navController,
-        startDestination = NavigationItem.HOME.route,
-        modifier = modifier
+        startDestination = NavigationItem.SEARCH.route
     ) {
-        composable(route = NavigationItem.HOME.route) {
-            val uiState by homeViewModel.homeUiState.collectAsStateWithLifecycle()
-            Home(
+        composable(route = NavigationItem.SEARCH.route) {
+            val searchEventFlow by searchViewModel.searchEventFlow.collectAsStateWithLifecycle(
+                initialValue = SearchEventFlow.Loading,
+                lifecycleOwner = LocalLifecycleOwner.current,
+                minActiveState = Lifecycle.State.STARTED
+            )
+            val searchUiState by searchViewModel.searchUiState.collectAsStateWithLifecycle()
+
+            HomeScreen(
+                searchEventFlow = searchEventFlow,
+                searchUiState = searchUiState,
                 tMapView = tMapView,
-                title = uiState.title,
-                onTitleChanged = homeViewModel::setTitle,
-                onNavigateToNaviScreen = {}
+                startListening = startListening,
+                checkIsSpeaking = checkIsSpeaking,
+                voiceOutput = voiceOutput,
+                makeMarker = searchViewModel::makeMarker,
+                getRoutePedestrian = searchViewModel::getRoutePedestrian,
+                setSpeechRecognizerListener = setSpeechRecognizerListener,
+                navigateRouteOnMap = searchViewModel::navigateRouteOnMap
             )
         }
 
-        composable(route = NavigationItem.SEARCH.route) {
-
-        }
-
-        composable(NavigationItem.SETTING.route) {
+        composable(route = NavigationItem.SETTING.route) {
 
         }
     }
@@ -67,7 +81,7 @@ fun BottomNavigationGraph(
         mutableStateOf(false)
     }
     val items = listOf(
-        NavigationItem.HOME,
+        NavigationItem.SEARCH,
         NavigationItem.SETTING
     )
 
@@ -76,10 +90,9 @@ fun BottomNavigationGraph(
         contentColor = Color.Black
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentDestination = navBackStackEntry?.destination
-        val backStackEntry = navController.currentBackStackEntryAsState()
-        items.forEach { screen ->
-            val selected = backStackEntry.value?.destination?.route == screen.route
+
+        items.filter { it.icon != null }.forEach { screen ->
+            val selected = navBackStackEntry?.destination?.route == screen.route
             BottomNavigationItem(
                 icon = {
                     Icon(
@@ -96,7 +109,7 @@ fun BottomNavigationGraph(
                     )
                 },
                 label = { Text(screen.title) },
-                selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                selected = selected,
                 onClick = {
                     navController.navigate(screen.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
@@ -105,6 +118,7 @@ fun BottomNavigationGraph(
                         launchSingleTop = true
                         restoreState = true
                     }
+
                     clickState.value = !clickState.value
                 }
             )

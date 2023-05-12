@@ -1,4 +1,4 @@
-package com.example.deucapstone2023.ui.screen.home.component
+package com.example.deucapstone2023.ui.screen.search.component
 
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
