@@ -25,9 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.example.deucapstone2023.R
-import com.example.deucapstone2023.ui.base.CommonRecognitionListener
-import com.example.deucapstone2023.ui.screen.search.SearchViewModel
-import com.example.deucapstone2023.ui.service.SpeechService
+import com.example.deucapstone2023.ui.screen.home.search.SearchViewModel
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.skt.tmap.TMapGpsManager
 import com.skt.tmap.TMapPoint
@@ -156,22 +154,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requireLaunchingPermission() {
-        locationPermissionRequest.launch(PERMISSIONS)
-    }
-
     private fun initState() {
         tMapGpsManager = TMapGpsManager(this).apply {
-            minTime = 8000
-            minDistance = 4.5F
-            provider = TMapGpsManager.PROVIDER_GPS
+            minTime = 1000
+            minDistance = 5F
+            provider = TMapGpsManager.PROVIDER_NETWORK
             setOnLocationChangeListener { location ->
                 searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
                 tMapView.apply {
                     setCenterPoint(location.latitude, location.longitude)
-                    zoomLevel = 18
-                    if (getMarkerItemFromId("UserPosition") != null)
-                        removeTMapMarkerItem("UserPosition")
+                    zoomLevel = 15
+                    if (getMarkerItem2FromID("UserPosition") != null)
+                        removeTMapMarkerItem2("UserPosition")
                     addTMapMarkerItem(TMapMarkerItem().apply {
                         tMapPoint = TMapPoint(location.latitude, location.longitude)
                         icon = BitmapFactory.decodeResource(
@@ -183,10 +177,59 @@ class MainActivity : ComponentActivity() {
                     })
                 }
             }
+            openGps()
         }
 
-        tMapGpsManager.openGps()
-        startService(Intent(this, SpeechService::class.java))
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+            setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) {
+
+                }
+
+                override fun onBeginningOfSpeech() {
+                    Log.d("test", "시작")
+                }
+
+                override fun onRmsChanged(rmsdB: Float) {
+
+                }
+
+                override fun onBufferReceived(buffer: ByteArray?) {
+
+                }
+
+                override fun onEndOfSpeech() {
+
+                }
+
+                override fun onError(error: Int) {
+                    voiceOutput("다시 말씀해 주실래요?")
+                }
+
+                override fun onResults(results: Bundle?) {
+                    val userSpeech =
+                        results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    searchViewModel.searchPlace(
+                        this@MainActivity.getString(R.string.T_Map_key),
+                        userSpeech?.get(0) ?: "당감댁"
+                    )
+                    if (userSpeech?.get(0) == null) {
+                        voiceOutput("다시 말씀해 주실래요?")
+                    } else {
+                        voiceOutput("사용자 입력 메세지는 ${userSpeech[0] ?: ""} 입니다.")
+                    }
+                }
+
+                override fun onPartialResults(partialResults: Bundle?) {
+
+                }
+
+                override fun onEvent(eventType: Int, params: Bundle?) {
+
+                }
+
+            })
+        }
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
 
