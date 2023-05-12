@@ -11,7 +11,7 @@ class POIRepositoryImpl @Inject constructor(
     private val apiService: ApiService
 ) : POIRepository{
     override suspend fun getPOISearch(poiModel: POIModel, appKey: String): List<POIModel> =
-        apiService.getPOISearch(poiModel.toRequestDTO(appKey = appKey))?.toPOIModel() ?: emptyList()
+        apiService.getPOISearch(poiModel.toRequestDTO(appKey = appKey)).toPOIModel()
 
 }
 

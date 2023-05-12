@@ -16,8 +16,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -31,21 +31,18 @@ import com.example.deucapstone2023.ui.screen.search.SearchEventFlow
 import com.example.deucapstone2023.ui.screen.search.SearchViewModel
 import com.skt.tmap.TMapView
 
-
 @Composable
 fun NavigationGraph(
-    tMapView: TMapView,
+    modifier: Modifier,
     navController: NavHostController,
+    tMapView: TMapView,
     homeViewModel: HomeViewModel = hiltViewModel(),
-    searchViewModel: SearchViewModel,
-    startListening: () -> Unit,
-    checkIsSpeaking: suspend () -> Unit,
-    voiceOutput: (String) -> Unit,
-    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit
+    searchViewModel: SearchViewModel
 ) {
     NavHost(
         navController = navController,
-        startDestination = NavigationItem.SEARCH.route
+        startDestination = NavigationItem.HOME.route,
+        modifier = modifier
     ) {
         composable(route = NavigationItem.SEARCH.route) {
             val searchEventFlow by searchViewModel.searchEventFlow.collectAsStateWithLifecycle(
@@ -77,7 +74,11 @@ fun NavigationGraph(
             )
         }
 
-        composable(route = NavigationItem.SETTING.route) {
+        composable(route = NavigationItem.SEARCH.route) {
+
+        }
+
+        composable(NavigationItem.SETTING.route) {
 
         }
     }
@@ -91,7 +92,7 @@ fun BottomNavigationGraph(
         mutableStateOf(false)
     }
     val items = listOf(
-        NavigationItem.SEARCH,
+        NavigationItem.HOME,
         NavigationItem.SETTING
     )
 
@@ -100,9 +101,10 @@ fun BottomNavigationGraph(
         contentColor = Color.Black
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
-
-        items.filter { it.icon != null }.forEach { screen ->
-            val selected = navBackStackEntry?.destination?.route == screen.route
+        val currentDestination = navBackStackEntry?.destination
+        val backStackEntry = navController.currentBackStackEntryAsState()
+        items.forEach { screen ->
+            val selected = backStackEntry.value?.destination?.route == screen.route
             BottomNavigationItem(
                 icon = {
                     Icon(
@@ -119,7 +121,7 @@ fun BottomNavigationGraph(
                     )
                 },
                 label = { Text(screen.title) },
-                selected = selected,
+                selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                 onClick = {
                     navController.navigate(screen.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
@@ -128,7 +130,6 @@ fun BottomNavigationGraph(
                         launchSingleTop = true
                         restoreState = true
                     }
-
                     clickState.value = !clickState.value
                 }
             )
