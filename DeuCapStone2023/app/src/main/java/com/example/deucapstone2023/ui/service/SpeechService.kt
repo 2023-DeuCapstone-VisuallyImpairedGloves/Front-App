@@ -60,44 +60,48 @@ class SpeechService : LifecycleService() {
         super.onDestroy()
     }
 
-    private val speechRecognizerListener = CommonRecognitionListener { results ->
-        val userSpeech =
-            results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+    private val speechRecognizerListener = CommonRecognitionListener(
+        doOnResult = { results ->
+            val userSpeech =
+                results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
 
-        if (userSpeech?.get(0) == null) {
-            lifecycleScope.launch {
-                voiceOutput("다시 말씀해 주실래요?")
-                checkIsSpeaking()
-                startListening()
-            }
-        } else if (!enabled) {
-            if (userSpeech[0] == HOT_WORDS) {
+            if (userSpeech?.get(0) == null) {
                 lifecycleScope.launch {
-                    voiceOutput("네 부르셨나요?")
+                    voiceOutput("다시 말씀해 주실래요?")
                     checkIsSpeaking()
-                    enabled = true
-                    startListening()
-                }
-            } else
-                startListening()
-        } else {
-            when {
-                userSpeech[0].contains("안내") -> {
-                    startActivity(Intent(this@SpeechService, MainActivity::class.java).apply {
-                        flags =
-                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        putExtra("userMessage", userSpeech[0].split(Regex("로|으로"))[0])
-                    })
-                    stopSelf()
-                }
 
-                else -> {
-                    enabled = false
-                    startListening()
+                }
+            } else if (!enabled) {
+                if (userSpeech[0] == HOT_WORDS) {
+                    lifecycleScope.launch {
+                        voiceOutput("네 부르셨나요?")
+                        checkIsSpeaking()
+                        enabled = true
+
+                    }
+                }
+            } else {
+                when {
+                    userSpeech[0].contains("안내") -> {
+                        startActivity(Intent(this@SpeechService, MainActivity::class.java).apply {
+                            flags =
+                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            putExtra("userMessage", userSpeech[0].split(Regex("로|으로"))[0])
+                        })
+                        stopSelf()
+                    }
+
+                    else -> {
+                        enabled = false
+                    }
                 }
             }
+            startListening()
+        },
+        doOnError = {
+            startListening()
         }
-    }
+    )
 
     private suspend fun checkIsSpeaking() {
         while (true) {

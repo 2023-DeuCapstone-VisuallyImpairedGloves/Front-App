@@ -6,7 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
 
-class CommonRecognitionListener(val doOnResult:(Bundle?) -> Unit) : RecognitionListener {
+class CommonRecognitionListener(val doOnResult:(Bundle?) -> Unit, val doOnError:(Int) -> Unit = {}) : RecognitionListener {
     override fun onReadyForSpeech(params: Bundle?) {}
 
     override fun onBeginningOfSpeech() {}
@@ -17,7 +17,7 @@ class CommonRecognitionListener(val doOnResult:(Bundle?) -> Unit) : RecognitionL
 
     override fun onEndOfSpeech() {}
 
-    override fun onError(error: Int) {}
+    override fun onError(error: Int) { doOnError(error) }
 
     override fun onResults(results: Bundle?) { doOnResult(results) }
 
