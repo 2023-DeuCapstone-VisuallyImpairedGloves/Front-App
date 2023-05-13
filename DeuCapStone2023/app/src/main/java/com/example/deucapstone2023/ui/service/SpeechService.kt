@@ -1,30 +1,24 @@
 package com.example.deucapstone2023.ui.service
 
 import android.content.Intent
-import android.os.Bundle
-import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
-import com.example.deucapstone2023.domain.usecase.POIUsecase
+import com.example.deucapstone2023.ui.base.CommonRecognitionListener
 import com.example.deucapstone2023.ui.navigation.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class SpeechService : LifecycleService() {
 
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var textToSpeech: TextToSpeech
-    private var enabled = MutableStateFlow(false)
-    @Inject lateinit var poiUsecase: POIUsecase
+    private var enabled = false
 
     override fun onCreate() {
         super.onCreate()
@@ -66,77 +60,43 @@ class SpeechService : LifecycleService() {
         super.onDestroy()
     }
 
-    private val speechRecognizerListener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) {
-        }
+    private val speechRecognizerListener = CommonRecognitionListener { results ->
+        val userSpeech =
+            results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
 
-        override fun onBeginningOfSpeech() {
-
-        }
-
-        override fun onRmsChanged(rmsdB: Float) {
-
-        }
-
-        override fun onBufferReceived(buffer: ByteArray?) {
-
-        }
-
-        override fun onEndOfSpeech() {
-
-        }
-
-        override fun onError(error: Int) {
-            startListening()
-        }
-
-        override fun onResults(results: Bundle?) {
-            val userSpeech =
-                results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-
-            if (userSpeech?.get(0) == null) {
+        if (userSpeech?.get(0) == null) {
+            lifecycleScope.launch {
+                voiceOutput("다시 말씀해 주실래요?")
+                checkIsSpeaking()
+                startListening()
+            }
+        } else if (!enabled) {
+            if (userSpeech[0] == HOT_WORDS) {
                 lifecycleScope.launch {
-                    voiceOutput("다시 말씀해 주실래요?")
+                    voiceOutput("네 부르셨나요?")
                     checkIsSpeaking()
+                    enabled = true
                     startListening()
                 }
-            } else if (!enabled.value) {
-                if (userSpeech[0] == HOT_WORDS) {
-                    lifecycleScope.launch {
-                        voiceOutput("네 부르셨나요?")
-                        checkIsSpeaking()
-                        enabled.update { true }
-                        startListening()
-                    }
-                } else
+            } else
+                startListening()
+        } else {
+            when {
+                userSpeech[0].contains("안내") -> {
+                    startActivity(Intent(this@SpeechService, MainActivity::class.java).apply {
+                        flags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        putExtra("userMessage", userSpeech[0].split(Regex("로|으로"))[0])
+                    })
+                    stopSelf()
+                }
+
+                else -> {
+                    enabled = false
                     startListening()
-            } else if (enabled.value) {
-                when {
-                    userSpeech[0].contains("안내") -> {
-                        startActivity(Intent(this@SpeechService,MainActivity::class.java).apply{
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            putExtra("userMessage",userSpeech[0].split(Regex("로|으로"))[0])
-                        })
-                        stopSelf()
-                        // enabled.update { false }
-                        // startListening()
-                    }
-                    else -> {
-                        enabled.update { false }
-                        startListening()
-                    }
                 }
             }
         }
-
-        override fun onPartialResults(partialResults: Bundle?) {
-
-        }
-
-        override fun onEvent(eventType: Int, params: Bundle?) {
-
-        }
-
     }
 
     private suspend fun checkIsSpeaking() {
@@ -158,8 +118,11 @@ class SpeechService : LifecycleService() {
                     RecognizerIntent.EXTRA_CALLING_PACKAGE,
                     packageName
                 )
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1000)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                putExtra(
+                    RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+                    1000
+                )
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
             }
         )

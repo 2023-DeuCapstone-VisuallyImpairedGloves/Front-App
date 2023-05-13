@@ -42,9 +42,8 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
 
     private val searchViewModel: SearchViewModel by viewModels()
-
-    private val tMapView: TMapView by lazy { TMapView(this).apply { setSKTMapApiKey(getString(R.string.T_Map_key)) } }
-    lateinit var tMapGpsManager: TMapGpsManager
+    private lateinit var tMapView: TMapView
+    private lateinit var tMapGpsManager: TMapGpsManager
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var textToSpeech: TextToSpeech
 
@@ -69,19 +68,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            requireLaunchingPermission()
-            initState()
-        }
-        setContent {
-            DeuCapStone2023Theme {
-                this.Content()
-            }
-        }
-    }
-
     override fun onNewIntent(intent: Intent?) {
         val place = intent?.getStringExtra("userMessage")
         Log.d("tests", "검색한 주소명: $place")
@@ -91,6 +77,100 @@ class MainActivity : ComponentActivity() {
         )
 
         super.onNewIntent(intent)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            requireLaunchingPermission()
+            initState()
+        }
+
+        setContent {
+            DeuCapStone2023Theme {
+                this.Content()
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun Content(
+        bottomNavigationViewModel: NavigationViewModel = hiltViewModel()
+    ) {
+        val bottomState by bottomNavigationViewModel.bottomBarState.collectAsStateWithLifecycle()
+        val navController = rememberNavController()
+        Scaffold(
+            bottomBar = {
+                if (bottomState)
+                    BottomNavigationGraph(navController = navController)
+            }
+        ) {
+            Box(modifier = Modifier.padding(it)) {
+                NavigationGraph(
+                    tMapView = tMapView,
+                    searchViewModel = searchViewModel,
+                    navController = navController,
+                    startListening = { startListening() },
+                    checkIsSpeaking = { checkIsSpeaking() },
+                    voiceOutput = { message -> voiceOutput(message) },
+                    setSpeechRecognizerListener = { listener -> setSpeechRecognizerListener(listener) }
+                )
+            }
+        }
+    }
+
+    private fun initState() {
+        tMapView = TMapView(this).apply {
+            setSKTMapApiKey(getString(R.string.T_Map_key))
+            setOnMapReadyListener {
+                setUserPosition(lat = 35.15130665819491, lon = 129.02657807928898)
+            }
+        }
+
+        tMapGpsManager = TMapGpsManager(this).apply {
+            minTime = 7000
+            minDistance = 4.5F
+            provider = TMapGpsManager.PROVIDER_GPS
+            setOnLocationChangeListener { location ->
+                searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
+                setUserPosition(lat = location.latitude, lon = location.longitude, zoomLevel = 18)
+            }
+            openGps()
+        }
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+
+        textToSpeech = TextToSpeech(this) { status ->
+            if (status != TextToSpeech.ERROR) {
+                textToSpeech.apply {
+                    language = Locale.KOREAN
+                    setSpeechRate(1.0f)
+                    setPitch(1.0f)
+                }
+            }
+        }
+
+        startService(Intent(this, SpeechService::class.java))
+    }
+
+    private fun setUserPosition(lat: Double, lon: Double, zoomLevel: Int = 15) {
+        tMapView.apply {
+            setCenterPoint(lat, lon)
+            this.zoomLevel = zoomLevel
+
+            if (getMarkerItemFromId("UserPosition") != null)
+                removeTMapMarkerItem("UserPosition")
+            addTMapMarkerItem(TMapMarkerItem().apply {
+                tMapPoint = TMapPoint(lat, lon)
+                icon = BitmapFactory.decodeResource(
+                    resources,
+                    R.drawable.ic_pin_red_a_midium
+                )
+                id = "UserPosition"
+                name = "UserPosition"
+            })
+        }
     }
 
     private fun voiceOutput(message: String) {
@@ -129,76 +209,8 @@ class MainActivity : ComponentActivity() {
         speechRecognizer.setRecognitionListener(listener)
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    private fun Content(
-        bottomNavigationViewModel: NavigationViewModel = hiltViewModel()
-    ) {
-        val bottomState by bottomNavigationViewModel.bottomBarState.collectAsStateWithLifecycle()
-        val navController = rememberNavController()
-        Scaffold(
-            bottomBar = {
-                if (bottomState)
-                    BottomNavigationGraph(navController = navController)
-            }
-        ) {
-            Box(modifier = Modifier.padding(it)) {
-                NavigationGraph(
-                    tMapView = tMapView,
-                    searchViewModel = searchViewModel,
-                    navController = navController,
-                    startListening = { startListening() },
-                    checkIsSpeaking = { checkIsSpeaking() },
-                    voiceOutput = { message -> voiceOutput(message) },
-                    setSpeechRecognizerListener = { listener -> setSpeechRecognizerListener(listener) }
-                )
-            }
-        }
-    }
-
     private fun requireLaunchingPermission() {
         locationPermissionRequest.launch(PERMISSIONS)
-    }
-
-    private fun initState() {
-        tMapGpsManager = TMapGpsManager(this).apply {
-            minTime = 8000
-            minDistance = 4.5F
-            provider = TMapGpsManager.PROVIDER_GPS
-            setOnLocationChangeListener { location ->
-                searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
-                tMapView.apply {
-                    setCenterPoint(location.latitude, location.longitude)
-                    zoomLevel = 18
-                    if (getMarkerItemFromId("UserPosition") != null)
-                        removeTMapMarkerItem("UserPosition")
-                    addTMapMarkerItem(TMapMarkerItem().apply {
-                        tMapPoint = TMapPoint(location.latitude, location.longitude)
-                        icon = BitmapFactory.decodeResource(
-                            resources,
-                            R.drawable.ic_pin_red_a_midium
-                        )
-                        id = "UserPosition"
-                        name = "UserPosition"
-                    })
-                }
-            }
-        }
-
-        tMapGpsManager.openGps()
-        startService(Intent(this, SpeechService::class.java))
-
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
-
-        textToSpeech = TextToSpeech(this) { status ->
-            if (status != TextToSpeech.ERROR) {
-                textToSpeech.apply {
-                    language = Locale.KOREAN
-                    setSpeechRate(1.0f)
-                    setPitch(1.0f)
-                }
-            }
-        }
     }
 
     override fun onDestroy() {

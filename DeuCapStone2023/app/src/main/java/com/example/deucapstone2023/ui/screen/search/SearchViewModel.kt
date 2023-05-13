@@ -50,7 +50,7 @@ data class SearchUiState(
     val routeList: List<RouteState>
     ) {
         companion object {
-            fun getInitValues(lat: Double = .0, lon: Double = .0) = SearchUiState(
+            fun getInitValues(lat: Double = 35.15130665819491, lon: Double = 129.02657807928898) = SearchUiState(
                 location = Location(latitude = lat, longitude = lon),
                 routeIndex = 0,
                 recentDistance = 0,

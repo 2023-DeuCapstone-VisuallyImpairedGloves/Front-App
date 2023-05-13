@@ -7,8 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
 
 class CommonRecognitionListener(val doOnResult:(Bundle?) -> Unit) : RecognitionListener {
-    private val coroutineContext = Dispatchers.IO
-    val coroutineScope = CoroutineScope(coroutineContext)
     override fun onReadyForSpeech(params: Bundle?) {}
 
     override fun onBeginningOfSpeech() {}
