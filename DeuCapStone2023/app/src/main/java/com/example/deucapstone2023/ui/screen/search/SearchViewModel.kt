@@ -84,7 +84,7 @@ class SearchViewModel @Inject constructor(
     fun navigateRouteOnMap(voiceOutput: (String) -> Unit) {
         val route = searchUiState.value.routeList[searchUiState.value.routeIndex]
 
-        if(searchUiState.value.recentDistance + 8 >= getDistanceFromHere(lat = route.destinationLatitude, lon = route.destinationLongitude)) {
+        if(searchUiState.value.recentDistance + 7 >= getDistanceFromHere(lat = route.destinationLatitude, lon = route.destinationLongitude)) {
             // 정상경로 -> LineString 정보를 활용 해서 현 위치 에서의 description 을 안내 해야함
             _searchUiState.update { state -> state.copy(recentDistance = getDistanceFromHere(lat = route.destinationLatitude, lon = route.destinationLongitude)) }
 
@@ -94,7 +94,7 @@ class SearchViewModel @Inject constructor(
                     voiceOutput("${route.description}해 주세요")
                 else {
                     //남은거리 안내
-                    if(searchUiState.value.recentDistance > 22) //18미터 초과라면 남은거리 안내
+                    if(searchUiState.value.recentDistance > 30) //18미터 초과라면 남은거리 안내
                         voiceOutput("보행자 경로를 따라 ${searchUiState.value.recentDistance}m 직진해 주세요")
                     else { // 남은 거리가 18미터 이하라면 다음경로 안내
                         guideRemainDistance(voiceOutput = voiceOutput)
@@ -104,7 +104,7 @@ class SearchViewModel @Inject constructor(
                 if(route.totalDistance - searchUiState.value.recentDistance <= 10) // 이동한 거리가 12미터 이하 일 때
                     voiceOutput("${route.description}해 주세요")
                 else {
-                    if(searchUiState.value.recentDistance > 22) { //이동한 거리가 12미터 초과 이고, 남은 거리가 18미터 초과일 때
+                    if(searchUiState.value.recentDistance > 30) { //이동한 거리가 12미터 초과 이고, 남은 거리가 18미터 초과일 때
                         voiceOutput("${searchUiState.value.recentDistance}m 직진해 주세요")
                     } else { //이동한 거리가 2미터 초과 이고, 남은 거리가 18미터 이하 일 때
                         guideRemainDistance(voiceOutput = voiceOutput)
@@ -121,7 +121,7 @@ class SearchViewModel @Inject constructor(
     private fun guideRemainDistance(voiceOutput : (String) -> Unit) {
         when(searchUiState.value.routeList[searchUiState.value.routeIndex + 1].pointType) {
             PointType.EP -> { // 목적지 라면, 목적지 안내
-                if(searchUiState.value.recentDistance <= 7) {
+                if(searchUiState.value.recentDistance <= 15) {
                     voiceOutput("목적지에 부근에 도착했습니다. 경로안내를 종료합니다.")
                     _searchUiState.update { state -> state.copy(routeList = emptyList()) }
                 } else {
@@ -130,7 +130,7 @@ class SearchViewModel @Inject constructor(
             }
             else -> { // 목적지가 아니면, 현재 남은 거리 안내후 다음경로 안내
                 voiceOutput("${searchUiState.value.recentDistance}m 직진해 주세요. 이어서 ${searchUiState.value.routeList[searchUiState.value.routeIndex+1].description}해 주세요")
-                if(searchUiState.value.recentDistance <= 10)  // 이동한 거리가 12미터 초과 이고, 남은 거리가 12미터 미만 일 때
+                if(searchUiState.value.recentDistance <= 18)  // 이동한 거리가 12미터 초과 이고, 남은 거리가 12미터 미만 일 때
                     _searchUiState.update { state ->
                         state.copy(
                             routeIndex = state.routeIndex + 1,
