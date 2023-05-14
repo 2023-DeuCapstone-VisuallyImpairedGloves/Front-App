@@ -1,5 +1,6 @@
 package com.example.deucapstone2023.ui.navigation
 
+import android.bluetooth.BluetoothManager
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
@@ -29,6 +30,9 @@ import com.example.deucapstone2023.ui.screen.search.HomeViewModel
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
 import com.example.deucapstone2023.ui.screen.search.SearchEventFlow
 import com.example.deucapstone2023.ui.screen.search.SearchViewModel
+import com.example.deucapstone2023.ui.screen.setting.SettingScreen
+import com.example.deucapstone2023.ui.screen.setting.SettingViewModel
+import com.example.deucapstone2023.ui.screen.setting.state.ButtonStatus
 import com.skt.tmap.TMapView
 
 
@@ -38,10 +42,13 @@ fun NavigationGraph(
     navController: NavHostController,
     homeViewModel: HomeViewModel = hiltViewModel(),
     searchViewModel: SearchViewModel,
+    settingViewModel: SettingViewModel = hiltViewModel(),
     startListening: () -> Unit,
     checkIsSpeaking: suspend () -> Unit,
     voiceOutput: (String) -> Unit,
-    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit
+    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
+    setUpBluetooth: (() -> Unit, () -> Unit) -> Unit,
+    disableBluetooth: (() -> Unit, () -> Unit) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -72,13 +79,23 @@ fun NavigationGraph(
                 title = homeUiState.title,
                 onTitleChanged = homeViewModel::setTitle,
                 onNavigateToNaviScreen = {
-                    searchViewModel::searchPlaceOnTyping.invoke(context.getString(R.string.T_Map_key),homeUiState.title)
+                    searchViewModel::searchPlaceOnTyping.invoke(
+                        context.getString(R.string.T_Map_key),
+                        homeUiState.title
+                    )
                 },
             )
         }
 
         composable(route = NavigationItem.SETTING.route) {
+            val settingUiState by settingViewModel.settingUiState.collectAsStateWithLifecycle()
 
+            SettingScreen(
+                settingUiState = settingUiState,
+                setControlStatus = settingViewModel::setControlStatus,
+                setUpBluetooth = setUpBluetooth,
+                disableBluetooth = disableBluetooth
+            )
         }
     }
 }
