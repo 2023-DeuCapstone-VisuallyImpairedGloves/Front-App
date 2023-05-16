@@ -130,11 +130,11 @@ class SearchViewModel @Inject constructor(
             }
             else -> { // 목적지가 아니면, 현재 남은 거리 안내후 다음경로 안내
                 voiceOutput("${searchUiState.value.recentDistance}m 직진해 주세요. 이어서 ${searchUiState.value.routeList[searchUiState.value.routeIndex+1].description}해 주세요")
-                if(searchUiState.value.recentDistance <= 18)  // 이동한 거리가 12미터 초과 이고, 남은 거리가 12미터 미만 일 때
+                if(searchUiState.value.recentDistance <= 15)  // 이동한 거리가 12미터 초과 이고, 남은 거리가 12미터 미만 일 때
                     _searchUiState.update { state ->
                         state.copy(
                             routeIndex = state.routeIndex + 1,
-                            recentDistance = searchUiState.value.routeList[searchUiState.value.routeIndex + 1].totalDistance
+                            recentDistance = searchUiState.value.routeList[searchUiState.value.routeIndex + 1].totalDistance + searchUiState.value.recentDistance
                         )
                     }
             }

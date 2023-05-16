@@ -144,7 +144,7 @@ class MainActivity : ComponentActivity() {
 
         tMapGpsManager = TMapGpsManager(this).apply {
             minTime = 6000
-            minDistance = 4F
+            minDistance = 3.5F
             provider = TMapGpsManager.PROVIDER_GPS
             setOnLocationChangeListener { location ->
                 searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
