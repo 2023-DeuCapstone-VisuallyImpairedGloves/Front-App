@@ -25,7 +25,6 @@ fun SettingScreen(
 ) {
     val scaffoldState = rememberScaffoldState()
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     SnackBarLayout(scaffoldState = scaffoldState) {
         Column(modifier = Modifier

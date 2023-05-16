@@ -5,23 +5,30 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.speech.SpeechRecognizer
+import android.util.Log
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -34,9 +41,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.withCreated
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
 import com.example.deucapstone2023.ui.component.DefaultLayout
+import com.example.deucapstone2023.ui.component.SnackBarLayout
 import com.example.deucapstone2023.ui.screen.search.component.HomeAppBar
 import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.ui.service.SpeechService
@@ -59,8 +68,24 @@ fun HomeScreen(
     startListening: () -> Unit,
     checkIsSpeaking: suspend () -> Unit,
     voiceOutput: (String) -> Unit,
-    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
+    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit
 ) {
+    val permissionState = rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val locationPermissionRequest = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.any { permission -> !permission.value }) {
+            Toast.makeText(context, "권한 동의가 필요합니다.", Toast.LENGTH_LONG).show()
+            (context as ComponentActivity).finish()
+        }
+        else {
+            permissionState.value = true
+        }
+    }
+
     val tMapView = remember {
         TMapView(context as ComponentActivity).apply {
             setSKTMapApiKey(context.getString(R.string.T_Map_key))
@@ -69,31 +94,24 @@ fun HomeScreen(
             }
         }
     }
-    val tMapGpsManager = TMapGpsManager(context)
 
-    val locationPermissionRequest = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.any { permission -> permission.value.not() }) {
-            Toast.makeText(context, "권한 동의가 필요합니다.", Toast.LENGTH_LONG).show()
-            (context as ComponentActivity).finish()
-        } else {
-            tMapGpsManager.apply {
-                minTime = 7000
-                minDistance = 4.5F
-                provider = TMapGpsManager.PROVIDER_NETWORK
-                setOnLocationChangeListener { location ->
-                    searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
-                    setUserPosition(
-                        tMapView = tMapView,
-                        lat = location.latitude,
-                        lon = location.longitude,
-                        zoomLevel = 18
-                    )
-                }
-                openGps()
-            }
+    val tMapGpsManager: TMapGpsManager = TMapGpsManager(context).apply {
+        minTime = 7000
+        minDistance = 4.5F
+        provider = TMapGpsManager.PROVIDER_GPS
+        setOnLocationChangeListener { location ->
+            searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
+            setUserPosition(
+                tMapView = tMapView,
+                lat = location.latitude,
+                lon = location.longitude,
+                zoomLevel = 18
+            )
         }
+    }
+
+    if(permissionState.value) {
+        tMapGpsManager.openGps()
     }
 
     val searchEventFlow by searchViewModel.searchEventFlow.collectAsStateWithLifecycle(
@@ -111,7 +129,6 @@ fun HomeScreen(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-
         onDispose {
             tMapGpsManager.closeGps()
             tMapView.onDestroy()
@@ -140,6 +157,7 @@ fun HomeScreen(
             )
         }
     )
+
 }
 
 @Composable
@@ -255,7 +273,9 @@ private fun HomeScreen(
     DefaultLayout(
         modifier = Modifier.addFocusCleaner(focusManager)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .clickable { focusManager.clearFocus() }) {
             AndroidView(
                 factory = { context ->
                     FrameLayout(context).apply {

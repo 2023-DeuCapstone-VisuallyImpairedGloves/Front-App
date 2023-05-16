@@ -32,9 +32,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
+import com.example.deucapstone2023.ui.screen.search.SearchEventFlow
 import com.example.deucapstone2023.ui.screen.search.SearchViewModel
 import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -53,23 +55,6 @@ class MainActivity : ComponentActivity() {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothSocket: BluetoothSocket? = null
 
-    private val locationPermissionRequest = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.any { permission -> permission.value.not() }) {
-            Toast.makeText(this, "권한 동의가 필요합니다.", Toast.LENGTH_LONG).show()
-            (this).finish()
-        } else {
-            permissions.onEach { permission ->
-                when (permission.key) {
-                    Manifest.permission.RECORD_AUDIO -> {
-
-                    }
-                }
-            }
-        }
-    }
-
     override fun onNewIntent(intent: Intent?) {
         val place = intent?.getStringExtra("userMessage")
         Log.d("tests", "검색한 주소명: $place")
@@ -83,17 +68,32 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        launchPermission()
-        initState()
-        setContent {
-            DeuCapStone2023Theme {
-                Content()
+
+        val permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            if (permissions.any { permission -> permission.value.not() }) {
+                Toast.makeText(this, "권한 동의가 필요합니다.", Toast.LENGTH_LONG).show()
+                finish()
+            } else {
+                setUpBluetoothAdapter(
+                    successOnSettingUp = {
+                        voiceOutput("기기와 연결되었습니다.")
+                    },
+                    failOnSettingUp = {
+                        voiceOutput("기기 연결에 실패했습니다.")
+                    }
+                )
+                initState()
+                setContent {
+                    DeuCapStone2023Theme {
+                        Content()
+                    }
+                }
             }
         }
-    }
 
-    private fun launchPermission() {
-        locationPermissionRequest.launch(PERMISSIONS)
+        permissionLauncher.launch(PERMISSIONS)
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -130,7 +130,7 @@ class MainActivity : ComponentActivity() {
 
         textToSpeech = TextToSpeech(this) { status ->
             if (status != TextToSpeech.ERROR) {
-                textToSpeech!!.apply {
+                textToSpeech.apply {
                     language = Locale.KOREAN
                     setSpeechRate(1.0f)
                     setPitch(1.0f)
@@ -190,20 +190,14 @@ class MainActivity : ComponentActivity() {
                 bluetoothAdapter?.cancelDiscovery()
             val device = bluetoothAdapter?.getRemoteDevice(address)
             lifecycleScope.launch(Dispatchers.IO) {
-                if (ActivityCompat.checkSelfPermission(
-                        this@MainActivity,
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) == PackageManager.PERMISSION_GRANTED
-                ) {
-                    bluetoothSocket = device?.createRfcommSocketToServiceRecord(UUID)
-                    bluetoothSocket?.let {
-                        try {
-                            it.connect()
-                            successOnSettingUp()
-                        } catch (e: IOException) {
-                            it.close()
-                            failOnSettingUp()
-                        }
+                bluetoothSocket = device?.createRfcommSocketToServiceRecord(UUID)
+                bluetoothSocket?.let {
+                    try {
+                        it.connect()
+                        successOnSettingUp()
+                    } catch (e: IOException) {
+                        it.close()
+                        failOnSettingUp()
                     }
                 }
             }
@@ -244,20 +238,24 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        speechRecognizer.apply {
-            cancel()
-            destroy()
-        }
-        textToSpeech.apply {
-            stop()
-            shutdown()
-        }
+        if(::speechRecognizer.isInitialized)
+            speechRecognizer.apply {
+                cancel()
+                destroy()
+            }
+        if(::textToSpeech.isInitialized)
+            textToSpeech.apply {
+                stop()
+                shutdown()
+            }
         super.onDestroy()
     }
 
     companion object {
         private val PERMISSIONS = arrayOf(
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
         )
         val UUID: UUID = java.util.UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
         const val DEVICE_NAME = "ESP32CAM-CLASSIC-BT"
