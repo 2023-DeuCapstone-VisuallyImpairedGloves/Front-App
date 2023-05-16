@@ -39,7 +39,7 @@ import com.example.deucapstone2023.ui.theme.deepGray
 import com.example.deucapstone2023.ui.theme.white
 import com.example.deucapstone2023.utils.tu
 
-val PERMISSIONS = arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
+private val PERMISSIONS = arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
 
 @Composable
 fun BluetoothControlSetting(

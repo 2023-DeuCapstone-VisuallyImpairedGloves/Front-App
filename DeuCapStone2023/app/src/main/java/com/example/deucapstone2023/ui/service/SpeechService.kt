@@ -62,41 +62,39 @@ class SpeechService : LifecycleService() {
 
     private val speechRecognizerListener = CommonRecognitionListener(
         doOnResult = { results ->
-            val userSpeech =
-                results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+            lifecycleScope.launch {
+                val userSpeech =
+                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
 
-            if (userSpeech?.get(0) == null) {
-                lifecycleScope.launch {
+                if (userSpeech?.get(0) == null) {
+
                     voiceOutput("다시 말씀해 주실래요?")
                     checkIsSpeaking()
+                } else if (!enabled) {
+                    if (userSpeech[0] == HOT_WORDS) {
 
-                }
-            } else if (!enabled) {
-                if (userSpeech[0] == HOT_WORDS) {
-                    lifecycleScope.launch {
                         voiceOutput("네 부르셨나요?")
                         checkIsSpeaking()
                         enabled = true
+                    }
+                } else {
+                    when {
+                        userSpeech[0].contains("안내") -> {
+                            startActivity(Intent(this@SpeechService, MainActivity::class.java).apply {
+                                flags =
+                                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                putExtra("userMessage", userSpeech[0].split(Regex("로|으로"))[0])
+                            })
+                            stopSelf()
+                        }
 
+                        else -> {
+                            enabled = false
+                        }
                     }
                 }
-            } else {
-                when {
-                    userSpeech[0].contains("안내") -> {
-                        startActivity(Intent(this@SpeechService, MainActivity::class.java).apply {
-                            flags =
-                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            putExtra("userMessage", userSpeech[0].split(Regex("로|으로"))[0])
-                        })
-                        stopSelf()
-                    }
-
-                    else -> {
-                        enabled = false
-                    }
-                }
+                startListening()
             }
-            startListening()
         },
         doOnError = {
             startListening()

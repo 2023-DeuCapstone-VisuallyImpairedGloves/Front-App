@@ -1,32 +1,49 @@
 package com.example.deucapstone2023.ui.screen.search
 
+import android.Manifest
+import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.speech.SpeechRecognizer
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.deucapstone2023.R
-import com.example.deucapstone2023.ui.component.DefaultLayout
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
+import com.example.deucapstone2023.ui.component.DefaultLayout
 import com.example.deucapstone2023.ui.screen.search.component.HomeAppBar
 import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.example.deucapstone2023.ui.theme.blue
 import com.example.deucapstone2023.utils.addFocusCleaner
+import com.skt.tmap.TMapGpsManager
 import com.skt.tmap.TMapPoint
 import com.skt.tmap.TMapView
 import com.skt.tmap.overlay.TMapMarkerItem
@@ -35,6 +52,98 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(
+    searchViewModel: SearchViewModel,
+    homeViewModel: HomeViewModel = hiltViewModel(),
+    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
+    context: Context = LocalContext.current,
+    startListening: () -> Unit,
+    checkIsSpeaking: suspend () -> Unit,
+    voiceOutput: (String) -> Unit,
+    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
+) {
+    val tMapView = remember {
+        TMapView(context as ComponentActivity).apply {
+            setSKTMapApiKey(context.getString(R.string.T_Map_key))
+            setOnMapReadyListener {
+                setUserPosition(tMapView = this, lat = 35.15130665819491, lon = 129.02657807928898)
+            }
+        }
+    }
+    val tMapGpsManager = TMapGpsManager(context)
+
+    val locationPermissionRequest = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.any { permission -> permission.value.not() }) {
+            Toast.makeText(context, "권한 동의가 필요합니다.", Toast.LENGTH_LONG).show()
+            (context as ComponentActivity).finish()
+        } else {
+            tMapGpsManager.apply {
+                minTime = 7000
+                minDistance = 4.5F
+                provider = TMapGpsManager.PROVIDER_NETWORK
+                setOnLocationChangeListener { location ->
+                    searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
+                    setUserPosition(
+                        tMapView = tMapView,
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        zoomLevel = 18
+                    )
+                }
+                openGps()
+            }
+        }
+    }
+
+    val searchEventFlow by searchViewModel.searchEventFlow.collectAsStateWithLifecycle(
+        initialValue = SearchEventFlow.Loading,
+        lifecycleOwner = LocalLifecycleOwner.current,
+        minActiveState = Lifecycle.State.STARTED
+    )
+    val searchUiState by searchViewModel.searchUiState.collectAsStateWithLifecycle()
+    val homeUiState by homeViewModel.homeUiState.collectAsStateWithLifecycle()
+
+    DisposableEffect(key1 = lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_CREATE) {
+                locationPermissionRequest.launch(PERMISSIONS)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            tMapGpsManager.closeGps()
+            tMapView.onDestroy()
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    HomeScreen(
+        searchEventFlow = searchEventFlow,
+        searchUiState = searchUiState,
+        tMapView = tMapView,
+        startListening = startListening,
+        checkIsSpeaking = checkIsSpeaking,
+        voiceOutput = voiceOutput,
+        makeMarker = searchViewModel::makeMarker,
+        getRoutePedestrian = searchViewModel::getRoutePedestrian,
+        setSpeechRecognizerListener = setSpeechRecognizerListener,
+        setDestinationInfo = searchViewModel::setDestinationInfo,
+        navigateRouteOnMap = searchViewModel::navigateRouteOnMap,
+        title = homeUiState.title,
+        onTitleChanged = homeViewModel::setTitle,
+        onNavigateToNaviScreen = {
+            searchViewModel::searchPlaceOnTyping.invoke(
+                context.getString(R.string.T_Map_key),
+                homeUiState.title
+            )
+        }
+    )
+}
+
+@Composable
+private fun HomeScreen(
     searchEventFlow: SearchEventFlow,
     searchUiState: SearchUiState,
     tMapView: TMapView,
@@ -54,7 +163,7 @@ fun HomeScreen(
     val context = LocalContext.current
 
     LaunchedEffect(key1 = searchUiState.location) {
-        if(searchUiState.routeList.isNotEmpty())
+        if (searchUiState.routeList.isNotEmpty())
             navigateRouteOnMap { message ->
                 voiceOutput(message)
             }
@@ -170,6 +279,31 @@ fun HomeScreen(
         }
     }
 }
+
+private val PERMISSIONS = arrayOf(
+    Manifest.permission.ACCESS_FINE_LOCATION,
+    Manifest.permission.ACCESS_COARSE_LOCATION
+)
+
+private fun setUserPosition(tMapView: TMapView, lat: Double, lon: Double, zoomLevel: Int = 15) {
+    tMapView.apply {
+        setCenterPoint(lat, lon)
+        this.zoomLevel = zoomLevel
+
+        if (getMarkerItemFromId("UserPosition") != null)
+            removeTMapMarkerItem("UserPosition")
+        addTMapMarkerItem(TMapMarkerItem().apply {
+            tMapPoint = TMapPoint(lat, lon)
+            icon = BitmapFactory.decodeResource(
+                resources,
+                R.drawable.ic_pin_red_a_midium
+            )
+            id = "UserPosition"
+            name = "UserPosition"
+        })
+    }
+}
+
 
 @Composable
 @Preview

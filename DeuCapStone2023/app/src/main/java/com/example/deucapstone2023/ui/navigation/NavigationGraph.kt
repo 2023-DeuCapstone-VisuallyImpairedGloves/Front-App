@@ -1,6 +1,5 @@
 package com.example.deucapstone2023.ui.navigation
 
-import android.bluetooth.BluetoothManager
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
@@ -12,78 +11,48 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.deucapstone2023.R
+import com.example.deucapstone2023.ui.base.CommonRecognitionListener
 import com.example.deucapstone2023.ui.screen.search.HomeScreen
 import com.example.deucapstone2023.ui.screen.search.HomeViewModel
-import com.example.deucapstone2023.ui.base.CommonRecognitionListener
-import com.example.deucapstone2023.ui.screen.search.SearchEventFlow
 import com.example.deucapstone2023.ui.screen.search.SearchViewModel
 import com.example.deucapstone2023.ui.screen.setting.SettingScreen
 import com.example.deucapstone2023.ui.screen.setting.SettingViewModel
-import com.example.deucapstone2023.ui.screen.setting.state.ButtonStatus
-import com.skt.tmap.TMapView
 
 
 @Composable
 fun NavigationGraph(
-    tMapView: TMapView,
     navController: NavHostController,
     homeViewModel: HomeViewModel = hiltViewModel(),
     searchViewModel: SearchViewModel,
     settingViewModel: SettingViewModel = hiltViewModel(),
+    setUpBluetooth: (() -> Unit, () -> Unit) -> Unit,
+    disableBluetooth: (() -> Unit, () -> Unit) -> Unit,
     startListening: () -> Unit,
     checkIsSpeaking: suspend () -> Unit,
     voiceOutput: (String) -> Unit,
-    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
-    setUpBluetooth: (() -> Unit, () -> Unit) -> Unit,
-    disableBluetooth: (() -> Unit, () -> Unit) -> Unit
+    setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit
 ) {
     NavHost(
         navController = navController,
         startDestination = NavigationItem.SEARCH.route
     ) {
         composable(route = NavigationItem.SEARCH.route) {
-            val searchEventFlow by searchViewModel.searchEventFlow.collectAsStateWithLifecycle(
-                initialValue = SearchEventFlow.Loading,
-                lifecycleOwner = LocalLifecycleOwner.current,
-                minActiveState = Lifecycle.State.STARTED
-            )
-            val searchUiState by searchViewModel.searchUiState.collectAsStateWithLifecycle()
-            val context = LocalContext.current
-            val homeUiState by homeViewModel.homeUiState.collectAsStateWithLifecycle()
-
             HomeScreen(
-                searchEventFlow = searchEventFlow,
-                searchUiState = searchUiState,
-                tMapView = tMapView,
+                searchViewModel = searchViewModel,
+                homeViewModel = homeViewModel,
                 startListening = startListening,
                 checkIsSpeaking = checkIsSpeaking,
                 voiceOutput = voiceOutput,
-                makeMarker = searchViewModel::makeMarker,
-                getRoutePedestrian = searchViewModel::getRoutePedestrian,
-                setSpeechRecognizerListener = setSpeechRecognizerListener,
-                setDestinationInfo = searchViewModel::setDestinationInfo,
-                navigateRouteOnMap = searchViewModel::navigateRouteOnMap,
-                title = homeUiState.title,
-                onTitleChanged = homeViewModel::setTitle,
-                onNavigateToNaviScreen = {
-                    searchViewModel::searchPlaceOnTyping.invoke(
-                        context.getString(R.string.T_Map_key),
-                        homeUiState.title
-                    )
-                },
+                setSpeechRecognizerListener = setSpeechRecognizerListener
             )
         }
 
