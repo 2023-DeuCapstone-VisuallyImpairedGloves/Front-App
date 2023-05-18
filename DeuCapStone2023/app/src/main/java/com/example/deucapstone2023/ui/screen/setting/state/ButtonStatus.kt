@@ -12,3 +12,8 @@ fun getButtonStatus(status: Boolean) = when(status) {
     true -> ButtonStatus.ON
     else -> ButtonStatus.OFF
 }
+
+fun ButtonStatus.toBoolean() = when(this) {
+    ButtonStatus.ON -> true
+    ButtonStatus.OFF -> false
+}

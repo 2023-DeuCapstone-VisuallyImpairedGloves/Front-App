@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -33,9 +32,7 @@ fun NavigationGraph(
     navController: NavHostController,
     homeViewModel: HomeViewModel = hiltViewModel(),
     searchViewModel: SearchViewModel,
-    settingViewModel: SettingViewModel = hiltViewModel(),
-    setUpBluetooth: (() -> Unit, () -> Unit) -> Unit,
-    disableBluetooth: (() -> Unit, () -> Unit) -> Unit,
+    settingViewModel: SettingViewModel,
     startListening: () -> Unit,
     checkIsSpeaking: suspend () -> Unit,
     voiceOutput: (String) -> Unit,
@@ -57,13 +54,8 @@ fun NavigationGraph(
         }
 
         composable(route = NavigationItem.SETTING.route) {
-            val settingUiState by settingViewModel.settingUiState.collectAsStateWithLifecycle()
-
             SettingScreen(
-                settingUiState = settingUiState,
-                setControlStatus = settingViewModel::setControlStatus,
-                setUpBluetooth = setUpBluetooth,
-                disableBluetooth = disableBluetooth
+                settingViewModel = settingViewModel
             )
         }
     }
