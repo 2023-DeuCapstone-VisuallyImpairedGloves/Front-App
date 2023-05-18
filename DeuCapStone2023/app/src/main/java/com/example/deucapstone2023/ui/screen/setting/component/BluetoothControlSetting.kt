@@ -1,11 +1,5 @@
 package com.example.deucapstone2023.ui.screen.setting.component
 
-import android.Manifest
-import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,60 +32,19 @@ import com.example.deucapstone2023.ui.theme.deepGray
 import com.example.deucapstone2023.ui.theme.white
 import com.example.deucapstone2023.utils.tu
 
-private val PERMISSIONS = arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
-
 @Composable
 fun BluetoothControlSetting(
     status: ButtonStatus,
     setStatus: (ButtonStatus) -> Unit,
-    showSnackBar: (String) -> Unit,
-    setUpBluetooth: (() -> Unit, () -> Unit) -> Unit,
-    disableBluetooth: (() -> Unit, () -> Unit) -> Unit
+    showSnackBar: (String) -> Unit
 ) {
-    val bluetoothSetUpLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        when (result.resultCode) {
-            Activity.RESULT_OK -> {
-                setUpBluetooth(
-                    {
-                        showSnackBar("장치에 연결되었습니다.")
-                    },
-                    {
-                        showSnackBar("장치 연결에 실패했습니다.")
-                        setStatus(ButtonStatus.OFF)
-                    }
-                )
-            }
-
-            Activity.RESULT_CANCELED -> {}
-        }
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.any { it.value.not() }) {
-            showSnackBar("권한이 필요합니다.")
-        } else {
-            bluetoothSetUpLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
-        }
-    }
-
     when (status) {
         ButtonStatus.ON -> {
-            permissionLauncher.launch(PERMISSIONS)
+            showSnackBar("자동 연결이 활성화 되었습니다.")
         }
 
         ButtonStatus.OFF -> {
-            disableBluetooth(
-                {
-                    showSnackBar("장치가 연결해제 되었습니다.")
-                },
-                {
-                    showSnackBar("장치의 연결해제에 실패했습니다.")
-                }
-            )
+            showSnackBar("자동 연결이 비활성화 되었습니다.")
         }
     }
 
@@ -110,7 +62,7 @@ fun BluetoothControlSetting(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "현재 시간 항상 보기",
+            text = "블루투스 자동 연결",
             fontSize = 16.tu,
             fontWeight = FontWeight.W700,
             color = deepGray,
@@ -187,14 +139,11 @@ fun BluetoothControlSetting(
 @Preview
 @Composable
 private fun PreviewTimeStatusSetting() {
-    val context = LocalContext.current
     DeuCapStone2023Theme() {
         BluetoothControlSetting(
             status = ButtonStatus.ON,
             setStatus = {},
-            showSnackBar = {},
-            setUpBluetooth = { _, _ -> },
-            disableBluetooth = { _, _ -> }
+            showSnackBar = {}
         )
     }
 }
