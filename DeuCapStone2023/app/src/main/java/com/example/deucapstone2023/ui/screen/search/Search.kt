@@ -21,9 +21,11 @@ import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +43,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withCreated
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
@@ -58,6 +61,7 @@ import com.skt.tmap.TMapView
 import com.skt.tmap.overlay.TMapMarkerItem
 import com.skt.tmap.overlay.TMapPolyLine
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
@@ -97,7 +101,7 @@ fun HomeScreen(
 
     val tMapGpsManager: TMapGpsManager = TMapGpsManager(context).apply {
         minTime = 7000
-        minDistance = 4.5F
+        minDistance = 5F
         provider = TMapGpsManager.PROVIDER_GPS
         setOnLocationChangeListener { location ->
             searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
@@ -181,10 +185,12 @@ private fun HomeScreen(
     val context = LocalContext.current
 
     LaunchedEffect(key1 = searchUiState.location) {
-        if (searchUiState.routeList.isNotEmpty())
+        if (searchUiState.routeList.isNotEmpty()) {
             navigateRouteOnMap { message ->
                 voiceOutput(message)
             }
+            setUserPosition(tMapView,searchUiState.location.latitude,searchUiState.location.longitude)
+        }
     }
 
     LaunchedEffect(key1 = searchEventFlow) {
@@ -209,6 +215,8 @@ private fun HomeScreen(
                     removeTMapPolyLine("pedestrianRoute")
                     addTMapPolyLine(polyLine)
                 }
+
+                voiceOutput("경로 안내를 시작합니다.")
             }
 
             is SearchEventFlow.POIList -> {
@@ -344,7 +352,7 @@ private fun PreviewHomeScreen() {
             navigateRouteOnMap = {},
             title = "",
             onTitleChanged = {},
-            onNavigateToNaviScreen = {},
+            onNavigateToNaviScreen = {}
         )
     }
 }
