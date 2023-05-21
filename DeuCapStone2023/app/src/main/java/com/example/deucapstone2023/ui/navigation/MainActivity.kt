@@ -10,11 +10,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.location.Location
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -32,7 +30,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,12 +39,10 @@ import androidx.lifecycle.withStarted
 import androidx.navigation.compose.rememberNavController
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
-import com.example.deucapstone2023.ui.screen.search.SearchUiState
 import com.example.deucapstone2023.ui.screen.search.SearchViewModel
 import com.example.deucapstone2023.ui.screen.setting.SettingViewModel
 import com.example.deucapstone2023.ui.screen.setting.state.ButtonStatus
 import com.example.deucapstone2023.ui.screen.setting.state.toBoolean
-import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -329,7 +324,7 @@ class MainActivity : ComponentActivity() {
 
     private fun readOnBluetooth() {
         bluetoothSocket?.let { socket ->
-            socket.inputStream.read(ByteArray(4096))
+            socket.inputStream.read(byteArrayOf())
         }
     }
 

@@ -8,12 +8,13 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deucapstone2023.R
-import com.example.deucapstone2023.data.dto.response.poi.Poi
 import com.example.deucapstone2023.domain.model.POIModel
 import com.example.deucapstone2023.domain.usecase.POIUsecase
 import com.example.deucapstone2023.domain.usecase.RouteUsecase
 import com.example.deucapstone2023.ui.base.PointType
+import com.example.deucapstone2023.ui.base.getAzimuthFromValue
 import com.example.deucapstone2023.ui.screen.search.state.Location
+import com.example.deucapstone2023.ui.screen.search.state.NavigationManager
 import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.ui.screen.search.state.RouteState
 import com.example.deucapstone2023.ui.screen.search.state.toPOIListState
@@ -39,36 +40,17 @@ import javax.inject.Inject
 sealed class SearchEventFlow {
     object Loading : SearchEventFlow()
     data class POIList(val poiList: List<POIState>) : SearchEventFlow()
-    data class RouteList(val routeList: List<RouteState>) : SearchEventFlow()
 }
 
 @Stable
 data class SearchUiState(
     val location: Location,
-    val routeIndex: Int,
-    val recentDistance: Int,
-    val destinationInfo: POIState,
     val routeList: List<RouteState>
 ) {
-    fun getDistanceFromStart(lat: Double, lon: Double) =
-        MapUtils.getDistance(
-            TMapPoint(
-                location.latitude,
-                location.longitude
-            ),
-            TMapPoint(
-                lat,
-                lon
-            )
-        ).toInt()
-
     companion object {
         fun getInitValues(lat: Double = 35.15130665819491, lon: Double = 129.02657807928898) =
             SearchUiState(
                 location = Location(latitude = lat, longitude = lon),
-                routeIndex = 0,
-                recentDistance = 0,
-                destinationInfo = POIState.getInitValues(),
                 routeList = emptyList()
             )
     }
@@ -87,100 +69,28 @@ class SearchViewModel @Inject constructor(
     private val _searchUiState = MutableStateFlow(SearchUiState.getInitValues())
     val searchUiState get() = _searchUiState.asStateFlow()
 
+    private val navigationManager = NavigationManager()
+
     fun setUserLocation(lat: Double, lon: Double) = _searchUiState.update { state ->
         state.copy(location = Location(latitude = lat, longitude = lon))
     }
 
-    fun setDestinationInfo(poi: POIState) = _searchUiState.update { state ->
-        state.copy(destinationInfo = poi)
+    fun setDestinationInfo(poi: POIState) {
+        navigationManager.destinationInfo = poi
     }
 
-    fun navigateRouteOnMap(voiceOutput: (String) -> Unit) {
-        val route = searchUiState.value.routeList[searchUiState.value.routeIndex]
-
-        if (searchUiState.value.recentDistance + 7 >= searchUiState.value.getDistanceFromStart(lat = route.destinationLatitude, lon = route.destinationLongitude)) {
-            Log.d("test","이전거리 : ${searchUiState.value.recentDistance}, 남은거리 : ${searchUiState.value.getDistanceFromStart(lat = route.destinationLatitude, lon = route.destinationLongitude)}")
-            // 정상경로 -> LineString 정보를 활용 해서 현 위치 에서의 description 을 안내 해야함
-            _searchUiState.update { state ->
-                state.copy(
-                    recentDistance = searchUiState.value.getDistanceFromStart(
-                        lat = route.destinationLatitude,
-                        lon = route.destinationLongitude
-                    )
-                )
-            }
-
-            // point 없이 linestring이 이어서 결합된 경우 -> 지정 description 안내 후 남은 거리 만큼 이동 추가 안내
-            if (route.totalDistance != route.description.filter { it.isDigit() }.toInt()) {
-                if (route.description.filter { it.isDigit() }
-                        .toInt() > (route.totalDistance - searchUiState.value.recentDistance))
-                    when (route.pointType) {
-                        PointType.SP -> {
-                            voiceOutput("다음 안내시 까지 ${route.description.filter { it.isDigit() }}m 직진 해주세요.")
-                        }
-
-                        else -> voiceOutput("${route.name} 에서 ${route.turnType.desc} 후 다음 안내시 까지 직진 해주세요.")
-                    }
-                else {
-                    guideRemainDistance(voiceOutput)
-                }
-            } else { // point 와 linestring 이 1:1 매칭 인 경우
-                if (route.totalDistance - searchUiState.value.recentDistance <= 10) {// 이동한 거리가 10미터 이하 일 때
-                    when (route.pointType) {
-                        PointType.SP -> {
-                            voiceOutput("다음 안내시 까지 ${route.description.filter { it.isDigit() }}m 직진 해주세요.")
-                        }
-
-                        else -> voiceOutput("${route.name} 에서 ${route.turnType.desc} 후 다음 안내시 까지 직진 해주세요.")
-                    }
-                } else {
-                    guideRemainDistance(voiceOutput)
-                }
-            }
-        } else {
-            //경로 재요청
-            requestPedestrianRoute(voiceOutput = voiceOutput)
-            Toast.makeText(
-                context,
-                "total : ${searchUiState.value.recentDistance}, 거리: ${
-                    searchUiState.value.getDistanceFromStart(
-                        lat = route.destinationLatitude,
-                        lon = route.destinationLongitude
-                    )
-                }",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
+    fun navigateRouteOnMap(azimuth:Double, voiceOutput: (String) -> Unit) {
+        navigationManager.navigateRouteOnMap(
+            routeList = searchUiState.value.routeList,
+            source = searchUiState.value.location,
+            azimuth = getAzimuthFromValue(azimuth),
+            voiceOutput = voiceOutput,
+            quitNavigation = { _searchUiState.update { state -> state.copy(routeList = emptyList()) } },
+            requestPedestrianRoute = { requestPedestrianRoute(azimuth, voiceOutput) }
+        )
     }
 
-    private fun guideRemainDistance(voiceOutput: (String) -> Unit) {
-        if (searchUiState.value.recentDistance <= 30) { // 남은 거리가 30미터 이하 이면, 안내
-            when (searchUiState.value.routeList[searchUiState.value.routeIndex + 1].pointType) {
-                PointType.EP -> { // 목적지 라면, 목적지 안내
-                    if (searchUiState.value.recentDistance <= 15) {
-                        voiceOutput("목적지에 부근에 도착했습니다. 경로안내를 종료합니다.")
-                        _searchUiState.update { state -> state.copy(routeList = emptyList()) }
-                    } else {
-                        voiceOutput("${searchUiState.value.recentDistance}m 직진해 주세요. 이어서 목적지가 있습니다.")
-                    }
-                }
-
-                else -> { // 목적지가 아니면, 현재 남은 거리 안내후 다음경로 안내
-                    voiceOutput("${searchUiState.value.recentDistance}m 직진해 주세요. 이어서 ${searchUiState.value.routeList[searchUiState.value.routeIndex + 1].description}해 주세요")
-                    if (searchUiState.value.recentDistance <= 15)  // 이동한 거리가 12미터 초과 이고, 남은 거리가 12미터 미만 일 때
-                        _searchUiState.update { state ->
-                            state.copy(
-                                routeIndex = state.routeIndex + 1,
-                                recentDistance = searchUiState.value.routeList[searchUiState.value.routeIndex + 1].totalDistance + searchUiState.value.recentDistance
-                            )
-                        }
-                }
-            }
-        }
-
-    }
-
-    private fun requestPedestrianRoute(voiceOutput: (String) -> Unit) {
+    private fun requestPedestrianRoute(azimuth: Double, voiceOutput: (String) -> Unit) {
         getRoutePedestrian(appKey = context.getString(R.string.T_Map_key))
         voiceOutput("경로를 이탈 했습니다. 경로를 재 요청 합니다.")
     }
@@ -256,22 +166,23 @@ class SearchViewModel @Inject constructor(
             appKey = appKey,
             startLatitude = searchUiState.value.location.latitude,
             startLongitude = searchUiState.value.location.longitude,
-            destinationPoiId = searchUiState.value.destinationInfo.id.toString(),
-            destinationLatitude = searchUiState.value.destinationInfo.latitude,
-            destinationLongitude = searchUiState.value.destinationInfo.longitude
+            destinationPoiId = navigationManager.destinationInfo.id.toString(),
+            destinationLatitude = navigationManager.destinationInfo.latitude,
+            destinationLongitude = navigationManager.destinationInfo.longitude
         ).onEach { routeModels ->
             val route = routeModels.toRouteListState()
             _searchUiState.update { state ->
                 state.copy(
                     routeList = route,
-                    recentDistance = route.first().totalDistance,
-                    routeIndex = 0
                 )
             }
-            emitEventFlow(
-                SearchEventFlow.RouteList(
-                    route.filter { it.lineInfo.isNotEmpty() })
+            navigationManager.recentDistance = route.first().totalDistance
+            navigationManager.routeIndex = 0
+            navigationManager.setInitAzimuth(
+                source = Location(route.first().startLatitude, route.first().startLongitude),
+                dest = Location(route.first().destinationLatitude, route.first().destinationLongitude)
             )
+
         }.catchFetching(
             onFailedHttpException = { e ->
                 Log.d("tests", "error : ${e.message}, ${e.printStackTrace()}}")

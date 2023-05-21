@@ -1,9 +1,14 @@
 package com.example.deucapstone2023.ui.screen.search
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.speech.SpeechRecognizer
 import android.util.Log
 import android.view.ViewGroup
@@ -17,20 +22,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -43,26 +44,28 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.withCreated
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
+import com.example.deucapstone2023.ui.base.getAzimuthFromValue
 import com.example.deucapstone2023.ui.component.DefaultLayout
-import com.example.deucapstone2023.ui.component.SnackBarLayout
 import com.example.deucapstone2023.ui.screen.search.component.HomeAppBar
 import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.example.deucapstone2023.ui.theme.blue
-import com.example.deucapstone2023.utils.addFocusCleaner
-import com.skt.tmap.TMapGpsManager
+import com.google.android.gms.location.Granularity
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.skt.tmap.TMapPoint
 import com.skt.tmap.TMapView
 import com.skt.tmap.overlay.TMapMarkerItem
 import com.skt.tmap.overlay.TMapPolyLine
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
+@SuppressLint("MissingPermission")
 @Composable
 fun HomeScreen(
     searchViewModel: SearchViewModel,
@@ -78,14 +81,17 @@ fun HomeScreen(
         mutableStateOf(false)
     }
 
+    val tMapViewReadyState = rememberSaveable {
+        mutableStateOf(false)
+    }
+
     val locationPermissionRequest = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (permissions.any { permission -> !permission.value }) {
             Toast.makeText(context, "권한 동의가 필요합니다.", Toast.LENGTH_LONG).show()
             (context as ComponentActivity).finish()
-        }
-        else {
+        } else {
             permissionState.value = true
         }
     }
@@ -95,27 +101,90 @@ fun HomeScreen(
             setSKTMapApiKey(context.getString(R.string.T_Map_key))
             setOnMapReadyListener {
                 setUserPosition(tMapView = this, lat = 35.15130665819491, lon = 129.02657807928898)
+                tMapViewReadyState.value = true
             }
         }
     }
 
-    val tMapGpsManager: TMapGpsManager = TMapGpsManager(context).apply {
-        minTime = 7000
-        minDistance = 5F
-        provider = TMapGpsManager.PROVIDER_GPS
-        setOnLocationChangeListener { location ->
-            searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
-            setUserPosition(
-                tMapView = tMapView,
-                lat = location.latitude,
-                lon = location.longitude,
-                zoomLevel = 18
-            )
+    val locationProvider = remember {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+
+    val locationRequester = remember {
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L).apply {
+            setMinUpdateDistanceMeters(10F)
+            setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
+            setWaitForAccurateLocation(true)
+        }.build()
+    }
+
+    val locationUpdatesCallback = remember {
+        object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { location ->
+                    searchViewModel::setUserLocation.invoke(location.latitude, location.longitude)
+                    setUserPosition(
+                        tMapView = tMapView,
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        zoomLevel = 18
+                    )
+                }
+            }
         }
     }
 
-    if(permissionState.value) {
-        tMapGpsManager.openGps()
+    val sensorListener = remember {
+        object: SensorEventListener {
+            val accValue = FloatArray(3)
+            val magValue = FloatArray(3)
+            var isAccValid = false
+            var isMagValid = false
+            override fun onSensorChanged(event: SensorEvent?) {
+                when(event?.sensor?.type) {
+                    Sensor.TYPE_ACCELEROMETER -> {
+                        System.arraycopy(event.values,0,accValue,0,event.values.size)
+                        isAccValid = true
+                    }
+                    Sensor.TYPE_MAGNETIC_FIELD -> {
+                        System.arraycopy(event.values,0,magValue,0,event.values.size)
+                        isMagValid = true
+                    }
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+            fun getAzimuth(): Double? {
+                if(isAccValid && isMagValid) {
+                    val r = FloatArray(9)
+                    val i = FloatArray(9)
+                    SensorManager.getRotationMatrix(r,i,accValue,magValue)
+
+                    val values = FloatArray(3)
+                    SensorManager.getOrientation(r, values)
+
+                    var azimuth = Math.toDegrees(values[0].toDouble())
+                    if(azimuth < 0)
+                        azimuth += 360
+
+                    return azimuth
+                }
+                return null
+            }
+        }
+    }
+
+    val sensorManager = remember {
+        (context.getSystemService(Context.SENSOR_SERVICE) as SensorManager)
+    }
+
+    val magneticSensor = remember {
+        sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+    }
+
+    val accelerometerSensor = remember {
+        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     }
 
     val searchEventFlow by searchViewModel.searchEventFlow.collectAsStateWithLifecycle(
@@ -128,15 +197,37 @@ fun HomeScreen(
 
     DisposableEffect(key1 = lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_CREATE) {
-                locationPermissionRequest.launch(PERMISSIONS)
+            when (event) {
+                Lifecycle.Event.ON_CREATE -> {
+                    locationPermissionRequest.launch(PERMISSIONS)
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    sensorManager.registerListener(sensorListener,accelerometerSensor,SensorManager.SENSOR_DELAY_UI)
+                    sensorManager.registerListener(sensorListener,magneticSensor,SensorManager.SENSOR_DELAY_UI)
+                }
+                Lifecycle.Event.ON_PAUSE -> {
+                    sensorManager.unregisterListener(sensorListener)
+                }
+                else -> {}
             }
         }
+
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            tMapGpsManager.closeGps()
+            locationProvider.flushLocations()
+            locationProvider.removeLocationUpdates(locationUpdatesCallback)
             tMapView.onDestroy()
             lifecycleOwner.lifecycle.removeObserver(observer)
+            tMapViewReadyState.value = false
+            permissionState.value = false
+        }
+    }
+
+    LaunchedEffect(key1 = permissionState.value, key2 = tMapViewReadyState.value) {
+        if (permissionState.value && tMapViewReadyState.value) {
+            locationProvider.requestLocationUpdates(
+                locationRequester, locationUpdatesCallback, null
+            )
         }
     }
 
@@ -144,6 +235,7 @@ fun HomeScreen(
         searchEventFlow = searchEventFlow,
         searchUiState = searchUiState,
         tMapView = tMapView,
+        azimuth = sensorListener.getAzimuth(),
         startListening = startListening,
         checkIsSpeaking = checkIsSpeaking,
         voiceOutput = voiceOutput,
@@ -170,6 +262,7 @@ private fun HomeScreen(
     searchUiState: SearchUiState,
     tMapView: TMapView,
     title: String,
+    azimuth: Double?,
     onTitleChanged: (String) -> Unit,
     onNavigateToNaviScreen: () -> Unit,
     startListening: () -> Unit,
@@ -179,45 +272,55 @@ private fun HomeScreen(
     getRoutePedestrian: (String) -> Unit,
     setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
     setDestinationInfo: (POIState) -> Unit,
-    navigateRouteOnMap: ((String) -> Unit) -> Unit
+    navigateRouteOnMap: (Double, (String) -> Unit) -> Unit
 ) {
+    val focusRequester = remember {
+        FocusRequester()
+    }
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
 
     LaunchedEffect(key1 = searchUiState.location) {
-        if (searchUiState.routeList.isNotEmpty()) {
-            navigateRouteOnMap { message ->
+        if (searchUiState.routeList.isNotEmpty() && azimuth != null) {
+            navigateRouteOnMap(azimuth) { message ->
                 voiceOutput(message)
             }
-            setUserPosition(tMapView,searchUiState.location.latitude,searchUiState.location.longitude)
+            setUserPosition(
+                tMapView,
+                searchUiState.location.latitude,
+                searchUiState.location.longitude,
+                18
+            )
+        }
+    }
+
+    LaunchedEffect(key1 = searchUiState.routeList) {
+        if(searchUiState.routeList.isNotEmpty()) {
+            val polyLine = TMapPolyLine("pedestrianRoute", null).apply {
+                outLineColor = blue.toArgb()
+                lineColor = blue.toArgb()
+                outLineWidth = 2f
+                lineWidth = 2f
+            }
+
+            searchUiState.routeList.onEach { route ->
+                route.lineInfo.onEach { line ->
+                    polyLine.addLinePoint(TMapPoint(line.latitude, line.longitude))
+                }
+            }
+
+            tMapView.apply {
+                removeTMapPolyLine("pedestrianRoute")
+                addTMapPolyLine(polyLine)
+            }
+
+            voiceOutput("경로 안내를 시작합니다.")
         }
     }
 
     LaunchedEffect(key1 = searchEventFlow) {
         when (searchEventFlow) {
             is SearchEventFlow.Loading -> {}
-            is SearchEventFlow.RouteList -> {
-
-                val polyLine = TMapPolyLine("pedestrianRoute", null).apply {
-                    outLineColor = blue.toArgb()
-                    lineColor = blue.toArgb()
-                    outLineWidth = 2f
-                    lineWidth = 2f
-                }
-
-                searchEventFlow.routeList.onEach { route ->
-                    route.lineInfo.onEach { line ->
-                        polyLine.addLinePoint(TMapPoint(line.latitude, line.longitude))
-                    }
-                }
-
-                tMapView.apply {
-                    removeTMapPolyLine("pedestrianRoute")
-                    addTMapPolyLine(polyLine)
-                }
-
-                voiceOutput("경로 안내를 시작합니다.")
-            }
 
             is SearchEventFlow.POIList -> {
                 if (searchEventFlow.poiList.isEmpty()) {
@@ -279,11 +382,12 @@ private fun HomeScreen(
     }
 
     DefaultLayout(
-        modifier = Modifier.addFocusCleaner(focusManager)
+        modifier = Modifier.clickable { focusManager.clearFocus() }
     ) {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .clickable { focusManager.clearFocus() }) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
             AndroidView(
                 factory = { context ->
                     FrameLayout(context).apply {
@@ -318,17 +422,22 @@ private fun setUserPosition(tMapView: TMapView, lat: Double, lon: Double, zoomLe
         setCenterPoint(lat, lon)
         this.zoomLevel = zoomLevel
 
-        if (getMarkerItemFromId("UserPosition") != null)
-            removeTMapMarkerItem("UserPosition")
-        addTMapMarkerItem(TMapMarkerItem().apply {
-            tMapPoint = TMapPoint(lat, lon)
-            icon = BitmapFactory.decodeResource(
-                resources,
-                R.drawable.ic_pin_red_a_midium
-            )
-            id = "UserPosition"
-            name = "UserPosition"
-        })
+        try {
+            if (getMarkerItemFromId("UserPosition") != null)
+                removeTMapMarkerItem("UserPosition")
+            addTMapMarkerItem(TMapMarkerItem().apply {
+                tMapPoint = TMapPoint(lat, lon)
+                icon = BitmapFactory.decodeResource(
+                    resources,
+                    R.drawable.ic_pin_red_a_midium
+                )
+                id = "UserPosition"
+                name = "UserPosition"
+            })
+        } catch (e: Exception) {
+            Log.d("test", "${e.message}")
+            Toast.makeText(context, "${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 }
 
@@ -342,6 +451,7 @@ private fun PreviewHomeScreen() {
             searchEventFlow = SearchEventFlow.Loading,
             searchUiState = SearchUiState.getInitValues(),
             tMapView = TMapView(context),
+            azimuth = 0.0,
             startListening = {},
             checkIsSpeaking = {},
             voiceOutput = {},
@@ -349,7 +459,7 @@ private fun PreviewHomeScreen() {
             getRoutePedestrian = {},
             setSpeechRecognizerListener = {},
             setDestinationInfo = {},
-            navigateRouteOnMap = {},
+            navigateRouteOnMap = {_,_ ->},
             title = "",
             onTitleChanged = {},
             onNavigateToNaviScreen = {}
