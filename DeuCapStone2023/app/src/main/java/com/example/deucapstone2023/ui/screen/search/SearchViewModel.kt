@@ -79,18 +79,18 @@ class SearchViewModel @Inject constructor(
         navigationManager.destinationInfo = poi
     }
 
-    fun navigateRouteOnMap(azimuth:Double, voiceOutput: (String) -> Unit) {
+    fun navigateRouteOnMap(azimuth: Double, voiceOutput: (String) -> Unit) {
         navigationManager.navigateRouteOnMap(
             routeList = searchUiState.value.routeList,
             source = searchUiState.value.location,
             azimuth = getAzimuthFromValue(azimuth),
             voiceOutput = voiceOutput,
             quitNavigation = { _searchUiState.update { state -> state.copy(routeList = emptyList()) } },
-            requestPedestrianRoute = { requestPedestrianRoute(azimuth, voiceOutput) }
+            requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) }
         )
     }
 
-    private fun requestPedestrianRoute(azimuth: Double, voiceOutput: (String) -> Unit) {
+    private fun requestPedestrianRoute(voiceOutput: (String) -> Unit) {
         getRoutePedestrian(appKey = context.getString(R.string.T_Map_key))
         voiceOutput("경로를 이탈 했습니다. 경로를 재 요청 합니다.")
     }
@@ -176,12 +176,17 @@ class SearchViewModel @Inject constructor(
                     routeList = route,
                 )
             }
-            navigationManager.recentDistance = route.first().totalDistance
-            navigationManager.routeIndex = 0
-            navigationManager.setInitAzimuth(
-                source = Location(route.first().startLatitude, route.first().startLongitude),
-                dest = Location(route.first().destinationLatitude, route.first().destinationLongitude)
-            )
+            navigationManager.apply {
+                recentDistance = route.first().totalDistance
+                routeIndex = 0
+                setInitAzimuth(
+                    source = Location(route.first().startLatitude, route.first().startLongitude),
+                    dest = Location(
+                        route.first().destinationLatitude,
+                        route.first().destinationLongitude
+                    )
+                )
+            }
 
         }.catchFetching(
             onFailedHttpException = { e ->

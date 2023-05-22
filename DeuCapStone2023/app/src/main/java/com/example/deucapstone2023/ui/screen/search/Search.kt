@@ -202,8 +202,8 @@ fun HomeScreen(
                     locationPermissionRequest.launch(PERMISSIONS)
                 }
                 Lifecycle.Event.ON_RESUME -> {
-                    sensorManager.registerListener(sensorListener,accelerometerSensor,SensorManager.SENSOR_DELAY_UI)
-                    sensorManager.registerListener(sensorListener,magneticSensor,SensorManager.SENSOR_DELAY_UI)
+                    sensorManager.registerListener(sensorListener,accelerometerSensor,SensorManager.SENSOR_DELAY_NORMAL)
+                    sensorManager.registerListener(sensorListener,magneticSensor,SensorManager.SENSOR_DELAY_NORMAL)
                 }
                 Lifecycle.Event.ON_PAUSE -> {
                     sensorManager.unregisterListener(sensorListener)

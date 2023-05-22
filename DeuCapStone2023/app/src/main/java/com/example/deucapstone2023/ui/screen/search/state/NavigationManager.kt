@@ -54,8 +54,6 @@ data class NavigationManager(
         val route = routeList[routeIndex]
         val halfPoint = route.totalDistance.div(2)
 
-        //TODO 현재 방위에 따라 다음 경로를 가기 위한 방위 안내 필요
-
         if (recentDistance > getDistanceFromSource(
                 source = source,
                 dest = Location(route.destinationLatitude, route.destinationLongitude)
@@ -92,7 +90,6 @@ data class NavigationManager(
             }
         } else {
             //경로 재요청
-            this.azimuth = azimuth
             requestPedestrianRoute(voiceOutput)
         }
 
