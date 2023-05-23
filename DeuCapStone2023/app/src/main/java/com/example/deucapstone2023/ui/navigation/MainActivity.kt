@@ -10,7 +10,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -28,35 +30,30 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.withCreated
 import androidx.lifecycle.withStarted
 import androidx.navigation.compose.rememberNavController
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
-import com.example.deucapstone2023.ui.screen.search.SearchEventFlow
 import com.example.deucapstone2023.ui.screen.search.SearchViewModel
 import com.example.deucapstone2023.ui.screen.setting.SettingViewModel
 import com.example.deucapstone2023.ui.screen.setting.state.ButtonStatus
-import com.example.deucapstone2023.ui.screen.setting.state.getButtonStatus
 import com.example.deucapstone2023.ui.screen.setting.state.toBoolean
-import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
-import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.Locale
 import java.util.UUID
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -70,6 +67,22 @@ class MainActivity : ComponentActivity() {
     private var bluetoothSocket: BluetoothSocket? = null
     private lateinit var bluetoothReceiver: BroadcastReceiver
     private var deviceHasFoundedFlag = false
+    private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    private val mPlaybackAttributes by lazy {
+        AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+            .build()
+    }
+    private val mFocusRequest: AudioFocusRequest by lazy {
+        AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            .setFocusGain(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            .setAudioAttributes(mPlaybackAttributes)
+            .setAcceptsDelayedFocusGain(false)
+            .setWillPauseWhenDucked(false)
+            .setOnAudioFocusChangeListener {}
+            .build()
+    }
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -96,6 +109,34 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         permissionLauncher.launch(PERMISSIONS)
+        /*lifecycleScope.launch {
+            var searchUiState = com.example.deucapstone2023.ui.screen.search.state.Location.getInitValues()
+            var flag = false
+            var flag2 = false
+            launch {
+                searchViewModel.searchUiState.collect { state->
+                    searchUiState = state.location
+
+                    if(searchUiState.latitude != 0.0)
+                        flag = true
+                    if(searchViewModel.navigationManager.routeIndex == 1)
+                        flag2 = true
+                }
+            }
+            launch {
+                while(true) {
+                    while (flag) {
+                        if(!flag2)
+                            searchViewModel::setUserLocation.invoke(searchUiState.latitude +0.00010000000000 , searchUiState.longitude - 0.00001000000000 )
+                        else
+                            searchViewModel::setUserLocation.invoke(searchUiState.latitude + 0.00000050000000 , searchUiState.longitude - 0.0001000000000 )
+                        Log.d("test",flag2.toString())
+                        delay(5000)
+                    }
+                    delay(1000)
+                }
+            }
+        }*/
     }
 
     @SuppressLint("MissingPermission")
@@ -141,27 +182,31 @@ class MainActivity : ComponentActivity() {
             override fun onReceive(c: Context?, intent: Intent?) {
                 when (intent?.action) {
                     BluetoothDevice.ACTION_FOUND -> {
-                        if(!deviceHasFoundedFlag) {
+                        if (!deviceHasFoundedFlag) {
                             val device =
                                 intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
-                            if(device?.name == DEVICE_NAME) {
-                                val remotedDevice = bluetoothAdapter?.getRemoteDevice(device.address)
+                            if (device?.name == DEVICE_NAME) {
+                                val remotedDevice =
+                                    bluetoothAdapter?.getRemoteDevice(device.address)
                                 connectBluetooth(remotedDevice)
                             }
                         }
                     }
+
                     BluetoothDevice.ACTION_ACL_CONNECTED -> {
                         voiceOutput("장치와 연결되었습니다.")
                         deviceHasFoundedFlag = true
                     }
+
                     BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
                         voiceOutput("장치가 연결해제 되었습니다.")
                         deviceHasFoundedFlag = false
                         bluetoothAdapter?.startDiscovery()
                     }
+
                     BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
-                        if(!deviceHasFoundedFlag) {
-                            if(settingViewModel.settingUiState.value.controlStatus.toBoolean())
+                        if (!deviceHasFoundedFlag) {
+                            if (settingViewModel.settingUiState.value.controlStatus.toBoolean())
                                 bluetoothAdapter?.startDiscovery()
                         }
                     }
@@ -215,11 +260,25 @@ class MainActivity : ComponentActivity() {
         bluetoothManager = this.getSystemService(BluetoothManager::class.java)
         bluetoothAdapter = bluetoothManager.adapter
 
-        startService(Intent(this, SpeechService::class.java))
+        //startService(Intent(this, SpeechService::class.java))
     }
 
     private fun voiceOutput(message: String) {
-        textToSpeech.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
+        lifecycleScope.launch(Dispatchers.Main) {
+            if(!textToSpeech.isSpeaking) {
+                val res =
+                    withContext(Dispatchers.Main) { audioManager.requestAudioFocus(mFocusRequest) }
+                when (res) {
+                    AudioManager.AUDIOFOCUS_REQUEST_FAILED -> {}
+                    AudioManager.AUDIOFOCUS_REQUEST_GRANTED -> {
+                        textToSpeech.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
+                        checkIsSpeaking()
+                        audioManager.abandonAudioFocusRequest(mFocusRequest)
+                    }
+                }
+            }
+        }
+
         Log.d("tests", "msg: $message")
     }
 
@@ -270,9 +329,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
     private fun readOnBluetooth() {
         bluetoothSocket?.let { socket ->
-            socket.inputStream.read(ByteArray(4096))
+            socket.inputStream.read(byteArrayOf())
         }
     }
 

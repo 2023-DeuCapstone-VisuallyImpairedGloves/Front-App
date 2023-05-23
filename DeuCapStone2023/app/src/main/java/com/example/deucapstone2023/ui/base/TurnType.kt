@@ -40,3 +40,35 @@ enum class TurnType(val code: Int, val desc: String) {
         fun getType(code: Int) = TurnType.values().first { it.code == code }
     }
 }
+
+fun TurnType.toAzimuthType(currentAzimuth: AzimuthType) =
+    when(currentAzimuth) {
+        AzimuthType.NORTH -> {
+            when(this) {
+                TurnType.TURN_LEFT, TurnType.TURN_LEFT_10, TurnType.TURN_LEFT_8, TurnType.LEFT_CROSSWALK -> AzimuthType.WEST
+                TurnType.RIGHT_CROSSWALK,TurnType.TURN_RIGHT,TurnType.TURN_RIGHT_2,TurnType.TURN_RIGHT_4 -> AzimuthType.EAST
+                else -> currentAzimuth
+            }
+        }
+        AzimuthType.SOUTH -> {
+            when(this) {
+                TurnType.TURN_LEFT, TurnType.TURN_LEFT_10, TurnType.TURN_LEFT_8, TurnType.LEFT_CROSSWALK -> AzimuthType.EAST
+                TurnType.RIGHT_CROSSWALK,TurnType.TURN_RIGHT,TurnType.TURN_RIGHT_2,TurnType.TURN_RIGHT_4 -> AzimuthType.WEST
+                else -> currentAzimuth
+            }
+        }
+        AzimuthType.EAST -> {
+            when(this) {
+                TurnType.TURN_LEFT, TurnType.TURN_LEFT_10, TurnType.TURN_LEFT_8, TurnType.LEFT_CROSSWALK -> AzimuthType.NORTH
+                TurnType.RIGHT_CROSSWALK,TurnType.TURN_RIGHT,TurnType.TURN_RIGHT_2,TurnType.TURN_RIGHT_4 -> AzimuthType.SOUTH
+                else -> currentAzimuth
+            }
+        }
+        AzimuthType.WEST -> {
+            when(this) {
+                TurnType.TURN_LEFT, TurnType.TURN_LEFT_10, TurnType.TURN_LEFT_8, TurnType.LEFT_CROSSWALK -> AzimuthType.SOUTH
+                TurnType.RIGHT_CROSSWALK,TurnType.TURN_RIGHT,TurnType.TURN_RIGHT_2,TurnType.TURN_RIGHT_4 -> AzimuthType.NORTH
+                else -> currentAzimuth
+            }
+        }
+    }
