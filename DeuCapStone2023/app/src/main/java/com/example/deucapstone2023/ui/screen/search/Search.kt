@@ -46,7 +46,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.deucapstone2023.R
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
-import com.example.deucapstone2023.ui.base.getAzimuthFromValue
 import com.example.deucapstone2023.ui.component.DefaultLayout
 import com.example.deucapstone2023.ui.screen.search.component.HomeAppBar
 import com.example.deucapstone2023.ui.screen.search.state.POIState
@@ -111,7 +110,7 @@ fun HomeScreen(
     }
 
     val locationRequester = remember {
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L).apply {
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000L).apply {
             setMinUpdateDistanceMeters(10F)
             setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
             setWaitForAccurateLocation(true)
@@ -135,19 +134,20 @@ fun HomeScreen(
     }
 
     val sensorListener = remember {
-        object: SensorEventListener {
+        object : SensorEventListener {
             val accValue = FloatArray(3)
             val magValue = FloatArray(3)
             var isAccValid = false
             var isMagValid = false
             override fun onSensorChanged(event: SensorEvent?) {
-                when(event?.sensor?.type) {
+                when (event?.sensor?.type) {
                     Sensor.TYPE_ACCELEROMETER -> {
-                        System.arraycopy(event.values,0,accValue,0,event.values.size)
+                        System.arraycopy(event.values, 0, accValue, 0, event.values.size)
                         isAccValid = true
                     }
+
                     Sensor.TYPE_MAGNETIC_FIELD -> {
-                        System.arraycopy(event.values,0,magValue,0,event.values.size)
+                        System.arraycopy(event.values, 0, magValue, 0, event.values.size)
                         isMagValid = true
                     }
                 }
@@ -156,16 +156,16 @@ fun HomeScreen(
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
             fun getAzimuth(): Double? {
-                if(isAccValid && isMagValid) {
+                if (isAccValid && isMagValid) {
                     val r = FloatArray(9)
                     val i = FloatArray(9)
-                    SensorManager.getRotationMatrix(r,i,accValue,magValue)
+                    SensorManager.getRotationMatrix(r, i, accValue, magValue)
 
                     val values = FloatArray(3)
                     SensorManager.getOrientation(r, values)
 
                     var azimuth = Math.toDegrees(values[0].toDouble())
-                    if(azimuth < 0)
+                    if (azimuth < 0)
                         azimuth += 360
 
                     return azimuth
@@ -201,13 +201,24 @@ fun HomeScreen(
                 Lifecycle.Event.ON_CREATE -> {
                     locationPermissionRequest.launch(PERMISSIONS)
                 }
+
                 Lifecycle.Event.ON_RESUME -> {
-                    sensorManager.registerListener(sensorListener,accelerometerSensor,SensorManager.SENSOR_DELAY_NORMAL)
-                    sensorManager.registerListener(sensorListener,magneticSensor,SensorManager.SENSOR_DELAY_NORMAL)
+                    sensorManager.registerListener(
+                        sensorListener,
+                        accelerometerSensor,
+                        SensorManager.SENSOR_DELAY_NORMAL
+                    )
+                    sensorManager.registerListener(
+                        sensorListener,
+                        magneticSensor,
+                        SensorManager.SENSOR_DELAY_NORMAL
+                    )
                 }
+
                 Lifecycle.Event.ON_PAUSE -> {
                     sensorManager.unregisterListener(sensorListener)
                 }
+
                 else -> {}
             }
         }
@@ -295,7 +306,7 @@ private fun HomeScreen(
     }
 
     LaunchedEffect(key1 = searchUiState.routeList) {
-        if(searchUiState.routeList.isNotEmpty()) {
+        if (searchUiState.routeList.isNotEmpty()) {
             val polyLine = TMapPolyLine("pedestrianRoute", null).apply {
                 outLineColor = blue.toArgb()
                 lineColor = blue.toArgb()
@@ -315,6 +326,8 @@ private fun HomeScreen(
             }
 
             voiceOutput("경로 안내를 시작합니다.")
+        } else if (searchEventFlow != SearchEventFlow.Loading && searchUiState.routeList.isEmpty()) {
+            tMapView.removeTMapPolyLine("pedestrianRoute")
         }
     }
 
@@ -459,7 +472,7 @@ private fun PreviewHomeScreen() {
             getRoutePedestrian = {},
             setSpeechRecognizerListener = {},
             setDestinationInfo = {},
-            navigateRouteOnMap = {_,_ ->},
+            navigateRouteOnMap = { _, _ -> },
             title = "",
             onTitleChanged = {},
             onNavigateToNaviScreen = {}

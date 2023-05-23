@@ -112,17 +112,25 @@ class MainActivity : ComponentActivity() {
         /*lifecycleScope.launch {
             var searchUiState = com.example.deucapstone2023.ui.screen.search.state.Location.getInitValues()
             var flag = false
+            var flag2 = false
             launch {
                 searchViewModel.searchUiState.collect { state->
                     searchUiState = state.location
+
                     if(searchUiState.latitude != 0.0)
                         flag = true
+                    if(searchViewModel.navigationManager.routeIndex == 1)
+                        flag2 = true
                 }
             }
             launch {
                 while(true) {
                     while (flag) {
-                        searchViewModel::setUserLocation.invoke(searchUiState.latitude +0.00005000000000 , searchUiState.longitude - 0.00000500000000 )
+                        if(!flag2)
+                            searchViewModel::setUserLocation.invoke(searchUiState.latitude +0.00010000000000 , searchUiState.longitude - 0.00001000000000 )
+                        else
+                            searchViewModel::setUserLocation.invoke(searchUiState.latitude + 0.00000050000000 , searchUiState.longitude - 0.0001000000000 )
+                        Log.d("test",flag2.toString())
                         delay(5000)
                     }
                     delay(1000)

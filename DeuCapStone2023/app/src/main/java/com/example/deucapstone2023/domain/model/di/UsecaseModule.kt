@@ -1,4 +1,4 @@
-package com.example.deucapstone2023.domain.di
+package com.example.deucapstone2023.domain.model.di
 
 import com.example.deucapstone2023.domain.usecase.POIUsecase
 import com.example.deucapstone2023.domain.usecase.RouteUsecase

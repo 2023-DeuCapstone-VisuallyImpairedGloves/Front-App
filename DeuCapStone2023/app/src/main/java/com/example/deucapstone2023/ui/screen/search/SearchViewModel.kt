@@ -3,7 +3,6 @@ package com.example.deucapstone2023.ui.screen.search
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +10,6 @@ import com.example.deucapstone2023.R
 import com.example.deucapstone2023.domain.model.POIModel
 import com.example.deucapstone2023.domain.usecase.POIUsecase
 import com.example.deucapstone2023.domain.usecase.RouteUsecase
-import com.example.deucapstone2023.ui.base.PointType
 import com.example.deucapstone2023.ui.base.getAzimuthFromValue
 import com.example.deucapstone2023.ui.screen.search.state.Location
 import com.example.deucapstone2023.ui.screen.search.state.NavigationManager
@@ -20,7 +18,6 @@ import com.example.deucapstone2023.ui.screen.search.state.RouteState
 import com.example.deucapstone2023.ui.screen.search.state.toPOIListState
 import com.example.deucapstone2023.ui.screen.search.state.toRouteListState
 import com.example.deucapstone2023.utils.catchFetching
-import com.skt.tmap.MapUtils
 import com.skt.tmap.TMapPoint
 import com.skt.tmap.overlay.TMapMarkerItem
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,6 +57,7 @@ data class SearchUiState(
 class SearchViewModel @Inject constructor(
     private val poiUsecase: POIUsecase,
     private val routeUsecase: RouteUsecase,
+    val navigationManager: NavigationManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -68,8 +66,6 @@ class SearchViewModel @Inject constructor(
 
     private val _searchUiState = MutableStateFlow(SearchUiState.getInitValues())
     val searchUiState get() = _searchUiState.asStateFlow()
-
-    private val navigationManager = NavigationManager()
 
     fun setUserLocation(lat: Double, lon: Double) = _searchUiState.update { state ->
         state.copy(location = Location(latitude = lat, longitude = lon))
@@ -86,7 +82,8 @@ class SearchViewModel @Inject constructor(
             azimuth = getAzimuthFromValue(azimuth),
             voiceOutput = voiceOutput,
             quitNavigation = { _searchUiState.update { state -> state.copy(routeList = emptyList()) } },
-            requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) }
+            requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) },
+            context = context
         )
     }
 
@@ -179,13 +176,7 @@ class SearchViewModel @Inject constructor(
             navigationManager.apply {
                 recentDistance = route.first().totalDistance
                 routeIndex = 0
-                setInitAzimuth(
-                    source = Location(route.first().startLatitude, route.first().startLongitude),
-                    dest = Location(
-                        route.first().destinationLatitude,
-                        route.first().destinationLongitude
-                    )
-                )
+                recentLineInfoIndex = 0
             }
 
         }.catchFetching(
