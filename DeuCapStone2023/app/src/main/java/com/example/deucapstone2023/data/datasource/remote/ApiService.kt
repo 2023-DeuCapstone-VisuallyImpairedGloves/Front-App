@@ -1,7 +1,7 @@
-package com.example.deucapstone2023.data
+package com.example.deucapstone2023.data.datasource.remote
 
-import com.example.deucapstone2023.data.dto.request.RouteRequest
-import com.example.deucapstone2023.data.dto.response.poi.POIResponse
+import com.example.deucapstone2023.data.datasource.remote.dto.request.RouteRequest
+import com.example.deucapstone2023.data.datasource.remote.dto.response.poi.POIResponse
 import com.example.deucapstone2023.data.dto.response.poi.RouteResponse
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body

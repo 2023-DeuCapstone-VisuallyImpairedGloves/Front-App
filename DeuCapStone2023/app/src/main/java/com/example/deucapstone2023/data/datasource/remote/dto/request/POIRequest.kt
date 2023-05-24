@@ -1,4 +1,4 @@
-package com.example.deucapstone2023.data.dto.request
+package com.example.deucapstone2023.data.datasource.remote.dto.request
 
 data class POIRequest(
     val version: Int = 1,

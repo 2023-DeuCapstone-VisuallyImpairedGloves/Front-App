@@ -1,4 +1,4 @@
-package com.example.deucapstone2023.data.dto.request
+package com.example.deucapstone2023.data.datasource.remote.dto.request
 
 import com.google.gson.annotations.SerializedName
 

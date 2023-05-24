@@ -1,8 +1,10 @@
 package com.example.deucapstone2023.di
 
+import com.example.deucapstone2023.data.repositoryimpl.LogRepositoryImpl
 import com.example.deucapstone2023.data.repositoryimpl.POIRepositoryImpl
 import com.example.deucapstone2023.data.repositoryimpl.RouteRepositoryImpl
 import com.example.deucapstone2023.data.repositoryimpl.SettingRepositoryImpl
+import com.example.deucapstone2023.domain.repository.LogRepository
 import com.example.deucapstone2023.domain.repository.POIRepository
 import com.example.deucapstone2023.domain.repository.RouteRepository
 import com.example.deucapstone2023.domain.repository.SettingRepository
@@ -27,4 +29,8 @@ abstract class RepositoryModule {
     @Singleton
     @Binds
     abstract fun bindsSettingRepository(settingRepositoryImpl: SettingRepositoryImpl): SettingRepository
+
+    @Singleton
+    @Binds
+    abstract fun bindsLogRepository(logRepositoryImpl: LogRepositoryImpl): LogRepository
 }

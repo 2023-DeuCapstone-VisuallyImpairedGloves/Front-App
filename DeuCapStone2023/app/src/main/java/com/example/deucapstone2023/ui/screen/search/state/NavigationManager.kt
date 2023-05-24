@@ -1,7 +1,9 @@
 package com.example.deucapstone2023.ui.screen.search.state
 
 import android.content.Context
+import com.example.deucapstone2023.data.datasource.local.database.entity.UserLocation
 import com.example.deucapstone2023.ui.base.AzimuthType
+import com.example.deucapstone2023.ui.screen.list.state.SensorInfo
 
 interface NavigationManager {
     var routeIndex: Int
@@ -16,7 +18,9 @@ interface NavigationManager {
         voiceOutput: (String) -> Unit,
         quitNavigation: () -> Unit,
         requestPedestrianRoute: ((String) -> Unit) -> Unit,
-        context: Context
+        context: Context,
+        setUserLocationOnDatabase: (UserLocation) -> Unit,
+        setAzimuthSensorOnDatabase: (SensorInfo) -> Unit
     )
 
     fun guideStartDistance(
