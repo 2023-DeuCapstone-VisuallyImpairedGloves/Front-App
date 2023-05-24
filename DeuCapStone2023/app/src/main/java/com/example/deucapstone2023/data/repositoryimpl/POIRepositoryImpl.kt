@@ -1,6 +1,6 @@
 package com.example.deucapstone2023.data.repositoryimpl
 
-import com.example.deucapstone2023.data.ApiService
+import com.example.deucapstone2023.data.datasource.remote.ApiService
 import com.example.deucapstone2023.data.mapper.toPOIModel
 import com.example.deucapstone2023.data.mapper.toRequestDTO
 import com.example.deucapstone2023.domain.model.POIModel

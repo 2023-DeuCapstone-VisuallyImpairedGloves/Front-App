@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -33,11 +34,10 @@ fun DefaultAppBar(
     modifier: Modifier = Modifier,
     onHeaderIconClick: () -> Unit = {},
     content: @Composable () -> Unit,
-    tailIcon: @Composable () -> Unit
+    tailIcon: @Composable () -> Unit = {}
 ) {
     Row(
         modifier = modifier
-            .height(36.dp)
             .background(shape = RoundedCornerShape(8.dp), color = white)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically

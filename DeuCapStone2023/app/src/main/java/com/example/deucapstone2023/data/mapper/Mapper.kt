@@ -1,7 +1,7 @@
 package com.example.deucapstone2023.data.mapper
 
-import com.example.deucapstone2023.data.dto.response.poi.POIResponse
-import com.example.deucapstone2023.data.dto.response.poi.Poi
+import com.example.deucapstone2023.data.datasource.remote.dto.response.poi.POIResponse
+import com.example.deucapstone2023.data.datasource.remote.dto.response.poi.Poi
 import com.example.deucapstone2023.data.dto.response.poi.RouteResponse
 import com.example.deucapstone2023.domain.model.LineModel
 import com.example.deucapstone2023.domain.model.POIModel

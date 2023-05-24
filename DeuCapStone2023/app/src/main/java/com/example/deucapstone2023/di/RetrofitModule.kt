@@ -1,6 +1,6 @@
 package com.example.deucapstone2023.di
 
-import com.example.deucapstone2023.data.ApiService
+import com.example.deucapstone2023.data.datasource.remote.ApiService
 import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides

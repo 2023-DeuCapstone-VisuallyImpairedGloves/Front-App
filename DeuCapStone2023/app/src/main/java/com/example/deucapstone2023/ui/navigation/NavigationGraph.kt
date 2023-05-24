@@ -20,6 +20,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.deucapstone2023.ui.base.CommonRecognitionListener
+import com.example.deucapstone2023.ui.screen.list.ListScreen
 import com.example.deucapstone2023.ui.screen.search.HomeScreen
 import com.example.deucapstone2023.ui.screen.search.HomeViewModel
 import com.example.deucapstone2023.ui.screen.search.SearchViewModel
@@ -58,6 +59,10 @@ fun NavigationGraph(
                 settingViewModel = settingViewModel
             )
         }
+
+        composable(route = NavigationItem.LIST.route) {
+            ListScreen()
+        }
     }
 }
 
@@ -70,7 +75,8 @@ fun BottomNavigationGraph(
     }
     val items = listOf(
         NavigationItem.SEARCH,
-        NavigationItem.SETTING
+        NavigationItem.SETTING,
+        NavigationItem.LIST
     )
 
     BottomNavigation(
