@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -51,6 +52,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.io.UnsupportedEncodingException
 import java.util.Locale
 import java.util.UUID
 
@@ -331,9 +333,46 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun readOnBluetooth() {
-        bluetoothSocket?.let { socket ->
-            socket.inputStream.read(byteArrayOf())
+        val mBluetoothThread = Thread {
+            var bitArray : ByteArray = byteArrayOf()
+            while (!Thread.currentThread().isInterrupted) {
+                try {
+                    bluetoothSocket?.let { socket ->
+                        val bytesAvailable = socket.inputStream.available()
+                        if (bytesAvailable != null) {
+                            if (bytesAvailable > 0) { //데이터가 수신된 경우
+                                val bufferBytes = ByteArray(bytesAvailable)
+                                socket.inputStream.read(bufferBytes)
+
+
+                                if (bufferBytes[0].toInt() == -1 && bufferBytes[1].toInt() == -40 ){
+                                    bitArray = byteArrayOf()//새로운 이미지 들어올시 초기화
+                                    bitArray = bitArray.plus(bufferBytes)
+                                }else if(bufferBytes[0].toInt() == 77 && bufferBytes[1].toInt() == 49 && bufferBytes[2].toInt() == 79){
+                                    if(bufferBytes[3].toInt() == 78){
+                                        //사물인식 시작
+                                    }else{
+                                        //사물인식 종료
+                                    }
+                                }else{
+                                    bitArray = bitArray.plus(bufferBytes)
+                                    if (bitArray[bitArray.size-2].toInt() == -1 && bitArray[bitArray.size-1].toInt() == -39) {
+                                        val bitmap = BitmapFactory.decodeByteArray(bitArray, 0, bitArray.size)//이미지 변환
+                                        //putBitmap.postValue(bitmap)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (e: UnsupportedEncodingException) {
+                    e.printStackTrace()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
         }
+        //데이터 수신 thread 시작
+        mBluetoothThread.start()
     }
 
     private fun writeOnBluetooth(number: Int) {
