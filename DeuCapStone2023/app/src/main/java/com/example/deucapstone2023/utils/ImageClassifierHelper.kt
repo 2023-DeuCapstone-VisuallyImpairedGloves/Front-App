@@ -17,8 +17,8 @@ import org.tensorflow.lite.task.vision.classifier.ImageClassifier
 class ImageClassifierHelper(
     var threshold: Float = 0.5f,
     var numThreads: Int = 2,
-    var maxResults: Int = 3,
-    var currentDelegate: Int = 0,
+    var maxResults: Int = 1,
+    var currentDelegate: Int = 1,
     var currentModel: Int = 0,
     val context: Context,
     val imageClassifierListener: ClassifierListener?
@@ -107,6 +107,7 @@ class ImageClassifierHelper(
             results,
             inferenceTime
         )
+        Log.d("BluetoothTests", "이미지 처리성공")
     }
 
     // Receive the device rotation (Surface.x values range from 0->3) and return EXIF orientation
