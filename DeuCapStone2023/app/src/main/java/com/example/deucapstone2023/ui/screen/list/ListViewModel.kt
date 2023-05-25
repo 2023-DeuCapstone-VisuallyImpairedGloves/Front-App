@@ -1,5 +1,6 @@
 package com.example.deucapstone2023.ui.screen.list
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deucapstone2023.data.datasource.local.database.entity.AzimuthSensor
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
+@Stable
 data class ListUiState(
     val userLocationList: List<UserLocation>,
     val azimuthSensorList: List<SensorInfo>,

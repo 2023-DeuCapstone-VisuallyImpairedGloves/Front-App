@@ -11,5 +11,5 @@ data class UserLocation(
     val source: String,
     val dest: String,
     val date: String,
-    @PrimaryKey val id: Int
+    @PrimaryKey(autoGenerate = true) val id: Int
 )

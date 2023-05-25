@@ -357,17 +357,22 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+
         if (::speechRecognizer.isInitialized)
             speechRecognizer.apply {
                 cancel()
                 destroy()
             }
+
         if (::textToSpeech.isInitialized)
             textToSpeech.apply {
                 stop()
                 shutdown()
             }
-        unregisterReceiver(bluetoothReceiver)
+
+        if(::bluetoothReceiver.isInitialized)
+            unregisterReceiver(bluetoothReceiver)
+
         bluetoothAdapter = null
 
         super.onDestroy()

@@ -1,6 +1,7 @@
 package com.example.deucapstone2023.ui.screen.setting
 
 import android.util.Log
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deucapstone2023.domain.usecase.SettingUsecase
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Stable
 data class SettingUiState(
     val controlStatus: ButtonStatus
 ) {

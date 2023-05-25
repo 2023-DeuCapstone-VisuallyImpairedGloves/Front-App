@@ -7,17 +7,6 @@ import com.example.deucapstone2023.ui.base.FacilityType
 import com.example.deucapstone2023.ui.base.PointType
 import com.example.deucapstone2023.ui.base.TurnType
 
-/*fun SearchUiState.toPOIModel(place: String) = POIModel(
-    name = place,
-    centerLat = latitude,
-    centerLon = longitude,
-    radius = "0",
-    searchtypCd = "R",
-    bizName = "",
-    address = "",
-    id = 0L
-)*/
-
 fun POIModel.toPOIState() = POIState(
     id = id,
     name = name,

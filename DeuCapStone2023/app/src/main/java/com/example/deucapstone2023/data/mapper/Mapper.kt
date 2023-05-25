@@ -115,7 +115,7 @@ fun RouteResponse.toRouteModel() = this.run {
                 destinationLongitude = (((location?.last() ?: .0) as List<*>?)?.get(0) ?: .0) as Double
                 routeName = feature.properties?.name ?: ""
                 routeFacilityType = if (feature.properties?.facilityType?.isNotBlank() == true) feature.properties.facilityType.toInt() ?: 0 else 0
-                totalDistance = feature.properties?.distance ?: MapUtils.getDistance(startLatitude, startLongitude, destinationLatitude, destinationLongitude).toInt()
+                totalDistance = MapUtils.getDistance(startLatitude, startLongitude, destinationLatitude, destinationLongitude).toInt()
                 totalTime = feature.properties?.time ?: 0
                 lineInfo.addAll(location?.map {
                     val eachLocation = (it as List<*>)

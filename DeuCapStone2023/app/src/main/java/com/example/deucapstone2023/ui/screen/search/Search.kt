@@ -78,7 +78,6 @@ fun HomeScreen(
 ) {
     val permissionState = rememberSaveable {
         mutableStateOf(false)
-
     }
 
     val tMapViewReadyState = rememberSaveable {

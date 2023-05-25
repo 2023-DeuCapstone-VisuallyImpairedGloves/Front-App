@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity
 data class DistanceSensor(
-    @PrimaryKey val id: Int,
+    @PrimaryKey(autoGenerate = true) val id: Int,
     val status: String,
     val desc: String,
     val date: String
