@@ -3,6 +3,7 @@ package com.example.deucapstone2023.ui.screen.search
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,6 +17,7 @@ import com.example.deucapstone2023.domain.usecase.RouteUsecase
 import com.example.deucapstone2023.ui.base.getAzimuthFromValue
 import com.example.deucapstone2023.ui.screen.list.state.SensorInfo
 import com.example.deucapstone2023.ui.screen.list.state.toAzimuthSensor
+import com.example.deucapstone2023.ui.screen.list.state.toDistanceSensor
 import com.example.deucapstone2023.ui.screen.search.state.Location
 import com.example.deucapstone2023.ui.screen.search.state.NavigationManager
 import com.example.deucapstone2023.ui.screen.search.state.POIState
@@ -81,18 +83,32 @@ class SearchViewModel @Inject constructor(
         navigationManager.destinationInfo = poi
     }
 
-    fun navigateRouteOnMap(azimuth: Double, voiceOutput: (String) -> Unit) {
-        navigationManager.navigateRouteOnMap(
+    fun navigateRouteOnMap(azimuth: Double,quitNavigation: () -> Unit, voiceOutput: (String) -> Unit) {
+        try{ navigationManager.navigateRouteOnMap(
             routeList = searchUiState.value.routeList,
             source = searchUiState.value.location,
             azimuth = getAzimuthFromValue(azimuth),
             voiceOutput = voiceOutput,
-            quitNavigation = { _searchUiState.update { state -> state.copy(routeList = emptyList()) } },
+            quitNavigation = {
+                _searchUiState.update { state -> state.copy(routeList = emptyList()) }
+                quitNavigation()
+            },
             requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) },
             context = context,
             setUserLocationOnDatabase = { userLocation -> setUserLocationOnDatabase(userLocation) },
-            setAzimuthSensorOnDatabase = { sensorInfo -> setAzimuthSensorOnDatabase(sensorInfo)}
-        )
+            setAzimuthSensorOnDatabase = { sensorInfo -> setAzimuthSensorOnDatabase(sensorInfo)},
+            setIndex = {index -> setIndex(index)}
+        ) }
+        catch (e:Exception) {
+            when(e) {
+                is IndexOutOfBoundsException -> {
+                    Toast.makeText(context,"index: ${navigationManager.recentLineInfoIndex}",Toast.LENGTH_LONG).show()
+                }
+                else -> {
+                    Toast.makeText(context,"${e.message}",Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     private fun requestPedestrianRoute(voiceOutput: (String) -> Unit) {
@@ -209,6 +225,14 @@ class SearchViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             logUsecase.setAzimuthSensor(azimuthSensor.toAzimuthSensor())
+        }
+    }
+
+    private fun setIndex(
+        index: SensorInfo
+    ) {
+        viewModelScope.launch {
+            logUsecase.setDistanceSensor(index.toDistanceSensor())
         }
     }
 
