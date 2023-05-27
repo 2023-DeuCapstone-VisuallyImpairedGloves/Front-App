@@ -10,7 +10,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -58,7 +57,6 @@ import org.tensorflow.lite.task.vision.classifier.Classifications
 import java.io.IOException
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
-import java.time.LocalDateTime
 import java.util.Locale
 import java.util.UUID
 
