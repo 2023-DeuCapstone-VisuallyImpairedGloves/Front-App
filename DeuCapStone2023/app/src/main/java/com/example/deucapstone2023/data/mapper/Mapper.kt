@@ -1,7 +1,7 @@
 package com.example.deucapstone2023.data.mapper
 
-import com.example.deucapstone2023.data.dto.response.poi.POIResponse
-import com.example.deucapstone2023.data.dto.response.poi.Poi
+import com.example.deucapstone2023.data.datasource.remote.dto.response.poi.POIResponse
+import com.example.deucapstone2023.data.datasource.remote.dto.response.poi.Poi
 import com.example.deucapstone2023.data.dto.response.poi.RouteResponse
 import com.example.deucapstone2023.domain.model.LineModel
 import com.example.deucapstone2023.domain.model.POIModel
@@ -115,7 +115,7 @@ fun RouteResponse.toRouteModel() = this.run {
                 destinationLongitude = (((location?.last() ?: .0) as List<*>?)?.get(0) ?: .0) as Double
                 routeName = feature.properties?.name ?: ""
                 routeFacilityType = if (feature.properties?.facilityType?.isNotBlank() == true) feature.properties.facilityType.toInt() ?: 0 else 0
-                totalDistance = feature.properties?.distance ?: MapUtils.getDistance(startLatitude, startLongitude, destinationLatitude, destinationLongitude).toInt()
+                totalDistance = MapUtils.getDistance(startLatitude, startLongitude, destinationLatitude, destinationLongitude).toInt()
                 totalTime = feature.properties?.time ?: 0
                 lineInfo.addAll(location?.map {
                     val eachLocation = (it as List<*>)

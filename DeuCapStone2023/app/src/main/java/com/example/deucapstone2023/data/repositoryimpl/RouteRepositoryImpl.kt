@@ -1,8 +1,8 @@
 package com.example.deucapstone2023.data.repositoryimpl
 
 import android.util.Log
-import com.example.deucapstone2023.data.ApiService
-import com.example.deucapstone2023.data.dto.request.RouteRequest
+import com.example.deucapstone2023.data.datasource.remote.ApiService
+import com.example.deucapstone2023.data.datasource.remote.dto.request.RouteRequest
 import com.example.deucapstone2023.data.mapper.toRouteModel
 import com.example.deucapstone2023.domain.model.RouteModel
 import com.example.deucapstone2023.domain.repository.RouteRepository

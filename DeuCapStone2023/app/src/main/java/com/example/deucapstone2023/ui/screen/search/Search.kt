@@ -321,7 +321,8 @@ private fun HomeScreen(
             }
 
             tMapView.apply {
-                removeTMapPolyLine("pedestrianRoute")
+                if(getPolyLineFromId("pedestrianRoute") != null)
+                    removeTMapPolyLine("pedestrianRoute")
                 addTMapPolyLine(polyLine)
             }
 

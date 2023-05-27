@@ -23,4 +23,11 @@ sealed class NavigationItem(
         icon = R.drawable.ic_setting,
         iconClicked = R.drawable.ic_setting_clicked
     )
+
+    object LIST: NavigationItem(
+        title = "리스트",
+        route = "list",
+        icon = R.drawable.ic_list,
+        iconClicked = R.drawable.ic_list_clicked
+    )
 }

@@ -296,8 +296,6 @@ class MainActivity : ComponentActivity() {
         //startService(Intent(this, SpeechService::class.java))
     }
 
-
-
     private fun voiceOutput(message: String) {
         lifecycleScope.launch(Dispatchers.Main) {
             if(!textToSpeech.isSpeaking) {
@@ -313,6 +311,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
         Log.d("tests", "msg: $message")
     }
 
@@ -431,19 +430,25 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+
         if (::speechRecognizer.isInitialized)
             speechRecognizer.apply {
                 cancel()
                 destroy()
             }
+
         if (::textToSpeech.isInitialized)
             textToSpeech.apply {
                 stop()
                 shutdown()
             }
+
+        if(::bluetoothReceiver.isInitialized)
+            unregisterReceiver(bluetoothReceiver)
+
         if (mBluetoothThread.isAlive)
             mBluetoothThread.interrupt()
-        unregisterReceiver(bluetoothReceiver)
+
         bluetoothAdapter = null
 
         super.onDestroy()

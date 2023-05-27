@@ -2,10 +2,20 @@ package com.example.deucapstone2023.ui.screen.search.state
 
 import android.content.Context
 import android.widget.Toast
+import com.example.deucapstone2023.data.datasource.local.database.entity.UserLocation
 import com.example.deucapstone2023.ui.base.AzimuthType
 import com.example.deucapstone2023.ui.base.PointType
 import com.example.deucapstone2023.ui.base.getAzimuthFromValue
+import com.example.deucapstone2023.ui.screen.list.state.SensorInfo
+import com.example.deucapstone2023.utils.date
+import com.example.deucapstone2023.utils.getCurrentTime
+import com.example.deucapstone2023.utils.hour
+import com.example.deucapstone2023.utils.minute
+import com.example.deucapstone2023.utils.month
+import com.example.deucapstone2023.utils.second
+import com.example.deucapstone2023.utils.year
 import com.skt.tmap.MapUtils
+import java.util.Calendar
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -59,7 +69,9 @@ class NavigationManagerImpl(
         voiceOutput: (String) -> Unit,
         quitNavigation: () -> Unit,
         requestPedestrianRoute: ((String) -> Unit) -> Unit,
-        context: Context
+        context: Context,
+        setUserLocationOnDatabase: (UserLocation) -> Unit,
+        setAzimuthSensorOnDatabase: (SensorInfo) -> Unit
     ) {
         val route = routeList[routeIndex]
         val halfPoint = route.totalDistance.div(2)
@@ -82,6 +94,14 @@ class NavigationManagerImpl(
                     )
                 }, index: $recentLineInfoIndex", Toast.LENGTH_LONG
             ).show()
+            setAzimuthSensorOnDatabase(
+                SensorInfo(
+                    id = 0,
+                    status = "false",
+                    desc = azimuth.name,
+                    date = getCurrentTime()
+                )
+            )
         } else {
             if (recentDistance > getDistanceFromSource(
                     source = source,
@@ -92,6 +112,25 @@ class NavigationManagerImpl(
                 recentDistance = getDistanceFromSource(
                     source = source,
                     dest = Location(route.destinationLatitude, route.destinationLongitude)
+                )
+                setUserLocationOnDatabase(
+                    UserLocation(
+                        id = 0,
+                        date = getCurrentTime(),
+                        latitude = source.latitude,
+                        longitude = source.longitude,
+                        nearPoiName = route.name,
+                        source = routeList.first().name,
+                        dest = destinationInfo.name
+                    )
+                )
+                setAzimuthSensorOnDatabase(
+                    SensorInfo(
+                        id = 0,
+                        status = "true",
+                        desc = azimuth.name,
+                        date = getCurrentTime()
+                    )
                 )
 
                 if (recentDistance >= halfPoint - 10 && recentDistance <= halfPoint + 10) {

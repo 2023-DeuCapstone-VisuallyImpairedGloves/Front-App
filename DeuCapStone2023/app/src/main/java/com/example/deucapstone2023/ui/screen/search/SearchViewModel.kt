@@ -7,10 +7,15 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deucapstone2023.R
+import com.example.deucapstone2023.data.datasource.local.database.entity.AzimuthSensor
+import com.example.deucapstone2023.data.datasource.local.database.entity.UserLocation
 import com.example.deucapstone2023.domain.model.POIModel
+import com.example.deucapstone2023.domain.usecase.LogUsecase
 import com.example.deucapstone2023.domain.usecase.POIUsecase
 import com.example.deucapstone2023.domain.usecase.RouteUsecase
 import com.example.deucapstone2023.ui.base.getAzimuthFromValue
+import com.example.deucapstone2023.ui.screen.list.state.SensorInfo
+import com.example.deucapstone2023.ui.screen.list.state.toAzimuthSensor
 import com.example.deucapstone2023.ui.screen.search.state.Location
 import com.example.deucapstone2023.ui.screen.search.state.NavigationManager
 import com.example.deucapstone2023.ui.screen.search.state.POIState
@@ -57,6 +62,7 @@ data class SearchUiState(
 class SearchViewModel @Inject constructor(
     private val poiUsecase: POIUsecase,
     private val routeUsecase: RouteUsecase,
+    private val logUsecase: LogUsecase,
     val navigationManager: NavigationManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -83,7 +89,9 @@ class SearchViewModel @Inject constructor(
             voiceOutput = voiceOutput,
             quitNavigation = { _searchUiState.update { state -> state.copy(routeList = emptyList()) } },
             requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) },
-            context = context
+            context = context,
+            setUserLocationOnDatabase = { userLocation -> setUserLocationOnDatabase(userLocation) },
+            setAzimuthSensorOnDatabase = { sensorInfo -> setAzimuthSensorOnDatabase(sensorInfo)}
         )
     }
 
@@ -187,6 +195,22 @@ class SearchViewModel @Inject constructor(
                 Log.d("tests", "error : ${e.message} , ${e.printStackTrace()}}")
             }
         ).launchIn(viewModelScope)
+
+    private fun setUserLocationOnDatabase(
+        userLocation: UserLocation
+    ) {
+        viewModelScope.launch {
+            logUsecase.setUserLocation(userLocation)
+        }
+    }
+
+    private fun setAzimuthSensorOnDatabase(
+        azimuthSensor: SensorInfo
+    ) {
+        viewModelScope.launch {
+            logUsecase.setAzimuthSensor(azimuthSensor.toAzimuthSensor())
+        }
+    }
 
     private fun emitEventFlow(state: SearchEventFlow) {
         viewModelScope.launch {

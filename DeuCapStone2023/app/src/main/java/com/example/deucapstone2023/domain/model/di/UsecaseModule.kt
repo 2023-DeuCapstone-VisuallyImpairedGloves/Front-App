@@ -1,8 +1,10 @@
 package com.example.deucapstone2023.domain.model.di
 
+import com.example.deucapstone2023.domain.usecase.LogUsecase
 import com.example.deucapstone2023.domain.usecase.POIUsecase
 import com.example.deucapstone2023.domain.usecase.RouteUsecase
 import com.example.deucapstone2023.domain.usecase.SettingUsecase
+import com.example.deucapstone2023.domain.usecase.impl.LogUsecaseImpl
 import com.example.deucapstone2023.domain.usecase.impl.POIUsecaseImpl
 import com.example.deucapstone2023.domain.usecase.impl.RouteUsecaseImpl
 import com.example.deucapstone2023.domain.usecase.impl.SettingUsecaseImpl
@@ -27,4 +29,8 @@ abstract class UsecaseModule {
     @Singleton
     @Binds
     abstract fun bindsSettingUsecase(settingUsecaseImpl: SettingUsecaseImpl): SettingUsecase
+
+    @Singleton
+    @Binds
+    abstract fun bindsLogUsecase(logUsecaseImpl: LogUsecaseImpl): LogUsecase
 }
