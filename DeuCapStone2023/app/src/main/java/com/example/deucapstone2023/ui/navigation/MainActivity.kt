@@ -25,13 +25,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +51,7 @@ import com.example.deucapstone2023.ui.screen.setting.state.ButtonStatus
 import com.example.deucapstone2023.ui.screen.setting.state.toBoolean
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.example.deucapstone2023.utils.ImageClassifierHelper
+import com.example.deucapstone2023.utils.addFocusCleaner
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -140,7 +145,11 @@ class MainActivity : ComponentActivity() {
 
             }
         })
-        /*lifecycleScope.launch {
+        //testingNavigation()
+    }
+
+    private fun testingNavigation() {
+        lifecycleScope.launch {
             var searchUiState = com.example.deucapstone2023.ui.screen.search.state.Location.getInitValues()
             var flag = false
             var flag2 = false
@@ -167,85 +176,17 @@ class MainActivity : ComponentActivity() {
                     delay(1000)
                 }
             }
-        }*/
+        }
     }
 
-    @SuppressLint("MissingPermission")
     private fun doOnPermissionApproved() {
-        lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.CREATED) {
-                settingViewModel.settingUiState.collectLatest { uiState ->
-                    if (::textToSpeech.isInitialized)
-                        when (uiState.controlStatus) {
-                            ButtonStatus.ON -> {
-                                bluetoothAdapter?.startDiscovery()
-                            }
-
-                            ButtonStatus.OFF -> {
-                                bluetoothAdapter?.cancelDiscovery()
-                            }
-                        }
-
-                }
-            }
-        }
         initState()
         setContent {
             DeuCapStone2023Theme {
                 Content()
             }
         }
-        registerBluetoothReceiver()
-    }
-
-    private fun registerBluetoothReceiver() {
-
-        val stateFilter = IntentFilter().apply {
-            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
-            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
-            addAction(BluetoothDevice.ACTION_FOUND)
-            addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
-            addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
-        }
-
-        bluetoothReceiver = object : BroadcastReceiver() {
-            @SuppressLint("MissingPermission")
-            override fun onReceive(c: Context?, intent: Intent?) {
-                when (intent?.action) {
-                    BluetoothDevice.ACTION_FOUND -> {
-                        if (!deviceHasFoundedFlag) {
-                            val device =
-                                intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
-                            if (device?.name == DEVICE_NAME) {
-                                val remotedDevice =
-                                    bluetoothAdapter?.getRemoteDevice(device.address)
-                                connectBluetooth(remotedDevice)
-                            }
-                        }
-                    }
-
-                    BluetoothDevice.ACTION_ACL_CONNECTED -> {
-                        voiceOutput("장치와 연결되었습니다.")
-                        deviceHasFoundedFlag = true
-                        readOnBluetooth()
-                    }
-
-                    BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
-                        voiceOutput("장치가 연결해제 되었습니다.")
-                        deviceHasFoundedFlag = false
-                        bluetoothAdapter?.startDiscovery()
-                    }
-
-                    BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
-                        if (!deviceHasFoundedFlag) {
-                            if (settingViewModel.settingUiState.value.controlStatus.toBoolean())
-                                bluetoothAdapter?.startDiscovery()
-                        }
-                    }
-                }
-            }
-        }
-        registerReceiver(bluetoothReceiver, stateFilter)
+        subscribeUI()
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -293,6 +234,82 @@ class MainActivity : ComponentActivity() {
         bluetoothAdapter = bluetoothManager.adapter
 
         //startService(Intent(this, SpeechService::class.java))
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun subscribeUI() {
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                settingViewModel.settingUiState.collectLatest { uiState ->
+                    if (::textToSpeech.isInitialized)
+                        when (uiState.controlStatus) {
+                            ButtonStatus.ON -> {
+                                registerBluetoothReceiver()
+                                bluetoothAdapter?.startDiscovery()
+                            }
+
+                            ButtonStatus.OFF -> {
+                                bluetoothAdapter?.cancelDiscovery()
+                                if(::bluetoothReceiver.isInitialized)
+                                    unregisterReceiver(bluetoothReceiver)
+                            }
+                        }
+
+                }
+            }
+        }
+    }
+
+    private fun registerBluetoothReceiver() {
+
+        val stateFilter = IntentFilter().apply {
+            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+            addAction(BluetoothDevice.ACTION_FOUND)
+            addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+        }
+
+        bluetoothReceiver = object : BroadcastReceiver() {
+            private var deviceIsConnected = false
+
+            @SuppressLint("MissingPermission")
+            override fun onReceive(c: Context?, intent: Intent?) {
+                val device = intent?.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+
+                if(device?.name == DEVICE_NAME) {
+                    when (intent.action) {
+                        BluetoothDevice.ACTION_FOUND -> {
+                            if (!deviceIsConnected) {
+                                val remotedDevice =
+                                    bluetoothAdapter?.getRemoteDevice(device.address)
+                                connectBluetooth(remotedDevice)
+                            }
+                        }
+
+                        BluetoothDevice.ACTION_ACL_CONNECTED -> {
+                            voiceOutput("장치와 연결되었습니다.")
+                            deviceIsConnected = true
+                            readOnBluetooth()
+                        }
+
+                        BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                            voiceOutput("장치가 연결해제 되었습니다.")
+                            deviceIsConnected = false
+                            bluetoothAdapter?.startDiscovery()
+                        }
+                    }
+                }
+
+                if(intent?.action == BluetoothAdapter.ACTION_DISCOVERY_FINISHED) {
+                    if (!deviceIsConnected) {
+                        if (settingViewModel.settingUiState.value.controlStatus.toBoolean())
+                            bluetoothAdapter?.startDiscovery()
+                    }
+                }
+
+            }
+        }
+        registerReceiver(bluetoothReceiver, stateFilter)
     }
 
     private fun voiceOutput(message: String) {

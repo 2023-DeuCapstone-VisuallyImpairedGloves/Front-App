@@ -71,7 +71,8 @@ class NavigationManagerImpl(
         requestPedestrianRoute: ((String) -> Unit) -> Unit,
         context: Context,
         setUserLocationOnDatabase: (UserLocation) -> Unit,
-        setAzimuthSensorOnDatabase: (SensorInfo) -> Unit
+        setAzimuthSensorOnDatabase: (SensorInfo) -> Unit,
+        setIndex: (SensorInfo) -> Unit
     ) {
         val route = routeList[routeIndex]
         val halfPoint = route.totalDistance.div(2)
@@ -132,15 +133,22 @@ class NavigationManagerImpl(
                         date = getCurrentTime()
                     )
                 )
+                setIndex(
+                    SensorInfo(
+                        id = 0,
+                        status = recentLineInfoIndex.toString(),
+                        desc = "${source.latitude} ${source.longitude}",
+                        date = getCurrentTime()
+                    )
+                )
 
                 if (recentDistance >= halfPoint - 10 && recentDistance <= halfPoint + 10) {
                     guideRemainDistance(routeList = routeList, voiceOutput, quitNavigation)
                 } else {
                     // point 없이 linestring이 이어서 결합된 경우 -> 지정 description 안내 후 남은 거리 만큼 이동 추가 안내
                     if (route.totalDistance != route.description.filter { it.isDigit() }.toInt()) {
-                        if (route.description.filter { it.isDigit() }
-                                .toInt() > route.totalDistance - recentDistance
-                            && route.totalDistance - recentDistance >= 5
+                        if (route.description.filter { it.isDigit() }.toInt() > route.totalDistance - recentDistance
+                            && route.totalDistance - recentDistance in 5..15
                         )
                             guideStartDistance(route, voiceOutput)
                         else {
@@ -169,7 +177,7 @@ class NavigationManagerImpl(
                     if (getDistanceFromSource(
                             source = source,
                             dest = route.lineInfo[recentLineInfoIndex + 1]
-                        ) <= 10
+                        ) < 10
                     )
                         recentLineInfoIndex++
                 }
@@ -195,7 +203,7 @@ class NavigationManagerImpl(
     ) {
         when (route.pointType) {
             PointType.SP -> {
-                voiceOutput("다음 안내시 까지 ${route.description.filter { it.isDigit() }}m 직진 해주세요.")
+                voiceOutput("다음 안내시 까지 ${recentDistance}m 직진 해주세요.")
             }
 
             else -> voiceOutput("${route.name} 에서 ${route.turnType.desc} 후 다음 안내시 까지 직진 해주세요.")

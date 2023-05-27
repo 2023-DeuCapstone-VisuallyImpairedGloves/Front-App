@@ -52,6 +52,7 @@ import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.example.deucapstone2023.ui.theme.blue
+import com.example.deucapstone2023.utils.addFocusCleaner
 import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -283,19 +284,17 @@ private fun HomeScreen(
     getRoutePedestrian: (String) -> Unit,
     setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
     setDestinationInfo: (POIState) -> Unit,
-    navigateRouteOnMap: (Double, (String) -> Unit) -> Unit
+    navigateRouteOnMap: (Double, () -> Unit, (String) -> Unit) -> Unit
 ) {
-    val focusRequester = remember {
-        FocusRequester()
-    }
-    val focusManager = LocalFocusManager.current
     val context = LocalContext.current
 
     LaunchedEffect(key1 = searchUiState.location) {
         if (searchUiState.routeList.isNotEmpty() && azimuth != null) {
-            navigateRouteOnMap(azimuth) { message ->
-                voiceOutput(message)
-            }
+            navigateRouteOnMap(
+                azimuth,
+                { tMapView.removeTMapPolyLine("pedestrianRoute") },
+                { message -> voiceOutput(message) }
+            )
             setUserPosition(
                 tMapView,
                 searchUiState.location.latitude,
@@ -321,14 +320,12 @@ private fun HomeScreen(
             }
 
             tMapView.apply {
-                if(getPolyLineFromId("pedestrianRoute") != null)
+                if (getPolyLineFromId("pedestrianRoute") != null)
                     removeTMapPolyLine("pedestrianRoute")
                 addTMapPolyLine(polyLine)
             }
 
             voiceOutput("경로 안내를 시작합니다.")
-        } else if (searchEventFlow != SearchEventFlow.Loading && searchUiState.routeList.isEmpty()) {
-            tMapView.removeTMapPolyLine("pedestrianRoute")
         }
     }
 
@@ -395,12 +392,9 @@ private fun HomeScreen(
         }
     }
 
-    DefaultLayout(
-        modifier = Modifier.clickable { focusManager.clearFocus() }
-    ) {
+    DefaultLayout() {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             AndroidView(
                 factory = { context ->
@@ -473,7 +467,7 @@ private fun PreviewHomeScreen() {
             getRoutePedestrian = {},
             setSpeechRecognizerListener = {},
             setDestinationInfo = {},
-            navigateRouteOnMap = { _, _ -> },
+            navigateRouteOnMap = { _, _, _ -> },
             title = "",
             onTitleChanged = {},
             onNavigateToNaviScreen = {}

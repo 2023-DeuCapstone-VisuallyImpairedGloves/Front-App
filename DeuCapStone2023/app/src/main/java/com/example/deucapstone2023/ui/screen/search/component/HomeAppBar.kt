@@ -6,6 +6,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,6 +24,7 @@ fun HomeAppBar(
     onTitleChanged: (String) -> Unit,
     onNavigateToNaviScreen: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
 
     DefaultAppBar(
         headerIcon = R.drawable.ic_hamburger,
@@ -47,7 +49,10 @@ fun HomeAppBar(
             )
         },
         tailIcon = {
-            IconButton(onClick = onNavigateToNaviScreen) {
+            IconButton(onClick = {
+                onNavigateToNaviScreen()
+                focusManager.clearFocus()
+            }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_navi),
                     contentDescription = "IconNavi"

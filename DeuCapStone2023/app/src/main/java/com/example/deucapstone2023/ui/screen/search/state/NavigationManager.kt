@@ -20,7 +20,8 @@ interface NavigationManager {
         requestPedestrianRoute: ((String) -> Unit) -> Unit,
         context: Context,
         setUserLocationOnDatabase: (UserLocation) -> Unit,
-        setAzimuthSensorOnDatabase: (SensorInfo) -> Unit
+        setAzimuthSensorOnDatabase: (SensorInfo) -> Unit,
+        setIndex: (SensorInfo) -> Unit
     )
 
     fun guideStartDistance(
