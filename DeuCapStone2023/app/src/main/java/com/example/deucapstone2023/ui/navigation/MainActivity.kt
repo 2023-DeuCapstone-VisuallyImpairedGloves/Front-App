@@ -74,9 +74,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var bluetoothReceiver: BroadcastReceiver
     private lateinit var mBluetoothThread : Thread
     private lateinit var imageClassifierHelper: ImageClassifierHelper
-    private var bluetoothReadState = false
-    private var tensorScanKind = StringBuilder("")
-    private var scanTime = System.currentTimeMillis()
+
     private var deviceHasFoundedFlag = false
     private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private val mPlaybackAttributes by lazy {
@@ -121,6 +119,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         permissionLauncher.launch(PERMISSIONS)
         imageClassifierHelper = ImageClassifierHelper(context = applicationContext, imageClassifierListener = object : ImageClassifierHelper.ClassifierListener{
+            private var scanTime = System.currentTimeMillis()
+            private var tensorScanKind = StringBuilder("")
+
             override fun onError(error: String) {
                 Log.d("Tensorflow", "error: $error")
             }
@@ -364,6 +365,7 @@ class MainActivity : ComponentActivity() {
     private fun readOnBluetooth() {
         mBluetoothThread = Thread {
             var bitArray : ByteArray = byteArrayOf()
+            var bluetoothReadState = false
             while (!Thread.currentThread().isInterrupted) {
                 try {
                     bluetoothSocket?.let { socket ->
