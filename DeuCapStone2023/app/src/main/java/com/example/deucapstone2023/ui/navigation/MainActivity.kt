@@ -58,17 +58,16 @@ import org.tensorflow.lite.task.vision.classifier.Classifications
 import java.io.IOException
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
+import java.time.LocalDateTime
 import java.util.Locale
 import java.util.UUID
 
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity(),ImageClassifierHelper.ClassifierListener {
+class MainActivity : ComponentActivity() {
 
     private val searchViewModel: SearchViewModel by viewModels()
     private val settingViewModel: SettingViewModel by viewModels()
-    private val bluetoothViewModel : BluetoothViewModel by viewModels()
-    private lateinit var imageClassifierHelper: ImageClassifierHelper
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var bluetoothManager: BluetoothManager
@@ -76,6 +75,10 @@ class MainActivity : ComponentActivity(),ImageClassifierHelper.ClassifierListene
     private var bluetoothSocket: BluetoothSocket? = null
     private lateinit var bluetoothReceiver: BroadcastReceiver
     private lateinit var mBluetoothThread : Thread
+    private lateinit var imageClassifierHelper: ImageClassifierHelper
+    private var bluetoothReadState = false
+    private var tensorScanKind = StringBuilder("")
+    private var scanTime = System.currentTimeMillis()
     private var deviceHasFoundedFlag = false
     private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private val mPlaybackAttributes by lazy {
@@ -119,8 +122,25 @@ class MainActivity : ComponentActivity(),ImageClassifierHelper.ClassifierListene
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         permissionLauncher.launch(PERMISSIONS)
-        imageClassifierHelper = ImageClassifierHelper(context = applicationContext, imageClassifierListener = this)
-        initTensorflow()
+        imageClassifierHelper = ImageClassifierHelper(context = applicationContext, imageClassifierListener = object : ImageClassifierHelper.ClassifierListener{
+            override fun onError(error: String) {
+                Log.d("Tensorflow", "error: $error")
+            }
+
+            override fun onResults(results: List<Classifications>?, inferenceTime: Long) {
+                results?.let {
+                    if (it.isNotEmpty()) {
+                        if (it[0].categories.isNotEmpty() && (it[0].categories[0].label != tensorScanKind.toString() || System.currentTimeMillis() - scanTime >= 5000)) {//기존 인식된 물체와 다른 물체가 인식되거나 인식된지 5초가 지났을 경우
+                            scanTime = System.currentTimeMillis()
+                            tensorScanKind.clear()
+                            tensorScanKind.append(it[0].categories[0].label)
+                            voiceOutput(tensorScanKind.toString())
+                        }
+                    }
+                }
+
+            }
+        })
         /*lifecycleScope.launch {
             var searchUiState = com.example.deucapstone2023.ui.screen.search.state.Location.getInitValues()
             var flag = false
@@ -276,29 +296,7 @@ class MainActivity : ComponentActivity(),ImageClassifierHelper.ClassifierListene
         //startService(Intent(this, SpeechService::class.java))
     }
 
-    private fun initTensorflow(){
-        lifecycleScope.launch(Dispatchers.IO){
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                bluetoothViewModel.bitmapFlow.collectLatest {bitmap ->
-                    if (bluetoothViewModel.bluetoothState){
-                        imageClassifierHelper.classify(bitmap, Surface.ROTATION_90)//텐서플로우로 이미지 식별
-                        Log.d("BluetoothTests", "이미지 텐서 입력")
-                    }
-                }
-            }
-        }
 
-        lifecycleScope.launch(Dispatchers.IO){
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                bluetoothViewModel.classificationsFlow.collectLatest {label ->
-                    if (label != ""){
-                        voiceOutput(label)//이미지 인식된 음성 출력
-                        Log.d("BluetoothTests", "이미지 음성 출력")
-                    }
-                }
-            }
-        }
-    }
 
     private fun voiceOutput(message: String) {
         lifecycleScope.launch(Dispatchers.Main) {
@@ -315,7 +313,6 @@ class MainActivity : ComponentActivity(),ImageClassifierHelper.ClassifierListene
                 }
             }
         }
-
         Log.d("tests", "msg: $message")
     }
 
@@ -374,33 +371,30 @@ class MainActivity : ComponentActivity(),ImageClassifierHelper.ClassifierListene
                 try {
                     bluetoothSocket?.let { socket ->
                         val bytesAvailable = socket.inputStream.available()
-                        if (bytesAvailable != null) {
-                            if (bytesAvailable > 0) { //데이터가 수신된 경우
-                                val bufferBytes = ByteArray(bytesAvailable)
-                                socket.inputStream.read(bufferBytes)
+                        if (bytesAvailable != 0) {
+                             //데이터가 수신된 경우
+                            val bufferBytes = ByteArray(bytesAvailable)
+                            socket.inputStream.read(bufferBytes)
 
-                                if (bufferBytes[0].toInt() == -1 && bufferBytes[1].toInt() == -40 ){
-                                    bitArray = byteArrayOf()//새로운 이미지 들어올시 초기화
-                                    bitArray = bitArray.plus(bufferBytes)
-                                }else if(bufferBytes[0].toInt() == 77 && bufferBytes[1].toInt() == 49 && bufferBytes[2].toInt() == 79){
-                                    if(bufferBytes[3].toInt() == 78){
-                                        //사물인식 시작
-                                        writeOnBluetooth(0)
-                                        bluetoothViewModel.bluetoothState = true
-                                    }else{
-                                        //사물인식 종료
-                                        bluetoothViewModel.bluetoothState = false
-                                    }
-                                    Log.d("BluetoothTests", String(bufferBytes))
+                            if (bufferBytes[0].toInt() == -1 && bufferBytes[1].toInt() == -40 ){
+                                bitArray = byteArrayOf()//새로운 이미지 들어올시 초기화
+                                bitArray = bitArray.plus(bufferBytes)
+                            }else if(bufferBytes[0].toInt() == 77 && bufferBytes[1].toInt() == 49 && bufferBytes[2].toInt() == 79){
+                                if(bufferBytes[3].toInt() == 78){
+                                    //사물인식 시작
+                                    writeOnBluetooth(0)
+                                    bluetoothReadState = true
                                 }else{
-                                    bitArray = bitArray.plus(bufferBytes)
-                                    if (bitArray[bitArray.size-2].toInt() == -1 && bitArray[bitArray.size-1].toInt() == -39) {
-                                        val bitmap = BitmapFactory.decodeByteArray(bitArray, 0, bitArray.size)//이미지 변환
-                                        bluetoothViewModel.emitBitmapFlow(bitmap)//읽어들인 이미지 전달
-                                        if (bluetoothViewModel.bluetoothState)//종료되기 전까지 이미지 계속 전달받기
-                                            writeOnBluetooth(0)
-                                        Log.d("BluetoothTests", "이미지 저장성공")
-                                    }
+                                    //사물인식 종료
+                                    bluetoothReadState = false
+                                }
+                            }else{
+                                bitArray = bitArray.plus(bufferBytes)
+                                if (bitArray[bitArray.size-2].toInt() == -1 && bitArray[bitArray.size-1].toInt() == -39) {
+                                    val bitmap = BitmapFactory.decodeByteArray(bitArray, 0, bitArray.size)//이미지 변환
+                                    imageClassifierHelper.classify(bitmap, Surface.ROTATION_90)//텐서플로우로 이미지 식별
+                                    if (bluetoothReadState)//종료되기 전까지 이미지 계속 전달받기
+                                        writeOnBluetooth(0)
                                 }
                             }
                         }
@@ -421,26 +415,6 @@ class MainActivity : ComponentActivity(),ImageClassifierHelper.ClassifierListene
             socket.outputStream.write(number.toString().toByteArray(Charset.defaultCharset()))
         }
     }
-
-
-
-    @SuppressLint("NotifyDataSetChanged")
-    override fun onError(error: String) {
-    }
-
-    @SuppressLint("NotifyDataSetChanged")//식별된 tensorflow 결과 저장
-    override fun onResults(
-        results: List<Classifications>?,
-        inferenceTime: Long
-    ) {
-        results?.let {
-            Log.d("BluetoothTests", it[0].toString())
-            if(it.isNotEmpty() && it[0].categories.isNotEmpty()){
-                bluetoothViewModel.emitClassificationsFlow(it[0].categories[0].label)
-            }
-        }
-    }
-
 
     @SuppressLint("MissingPermission")
     private fun disableBluetooth(
