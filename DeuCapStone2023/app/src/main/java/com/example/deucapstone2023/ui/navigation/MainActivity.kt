@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -18,6 +19,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.Surface
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,6 +50,7 @@ import com.example.deucapstone2023.ui.screen.setting.SettingViewModel
 import com.example.deucapstone2023.ui.screen.setting.state.ButtonStatus
 import com.example.deucapstone2023.ui.screen.setting.state.toBoolean
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
+import com.example.deucapstone2023.utils.ImageClassifierHelper
 import com.example.deucapstone2023.utils.addFocusCleaner
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -55,7 +58,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.tensorflow.lite.task.vision.classifier.Classifications
 import java.io.IOException
+import java.io.UnsupportedEncodingException
+import java.nio.charset.Charset
 import java.util.Locale
 import java.util.UUID
 
@@ -71,6 +77,10 @@ class MainActivity : ComponentActivity() {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothSocket: BluetoothSocket? = null
     private lateinit var bluetoothReceiver: BroadcastReceiver
+    private lateinit var mBluetoothThread : Thread
+    private lateinit var imageClassifierHelper: ImageClassifierHelper
+
+    private var deviceHasFoundedFlag = false
     private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private val mPlaybackAttributes by lazy {
         AudioAttributes.Builder()
@@ -113,6 +123,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         permissionLauncher.launch(PERMISSIONS)
+        imageClassifierHelper = ImageClassifierHelper(context = applicationContext, imageClassifierListener = object : ImageClassifierHelper.ClassifierListener{
+            private var scanTime = System.currentTimeMillis()
+            private var tensorScanKind = StringBuilder("")
+
+            override fun onError(error: String) {
+                Log.d("Tensorflow", "error: $error")
+            }
+
+            override fun onResults(results: List<Classifications>?, inferenceTime: Long) {
+                results?.let {
+                    if (it.isNotEmpty()) {
+                        if (it[0].categories.isNotEmpty() && (it[0].categories[0].label != tensorScanKind.toString() || System.currentTimeMillis() - scanTime >= 5000)) {//기존 인식된 물체와 다른 물체가 인식되거나 인식된지 5초가 지났을 경우
+                            scanTime = System.currentTimeMillis()
+                            tensorScanKind.clear()
+                            tensorScanKind.append(it[0].categories[0].label)
+                            voiceOutput(tensorScanKind.toString())
+                        }
+                    }
+                }
+
+            }
+        })
         //testingNavigation()
     }
 
@@ -257,6 +289,7 @@ class MainActivity : ComponentActivity() {
                         BluetoothDevice.ACTION_ACL_CONNECTED -> {
                             voiceOutput("장치와 연결되었습니다.")
                             deviceIsConnected = true
+                            readOnBluetooth()
                         }
 
                         BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
@@ -347,14 +380,55 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun readOnBluetooth() {
-        bluetoothSocket?.let { socket ->
-            socket.inputStream.read(byteArrayOf())
+        mBluetoothThread = Thread {
+            var bitArray : ByteArray = byteArrayOf()
+            var bluetoothReadState = false
+            while (!Thread.currentThread().isInterrupted) {
+                try {
+                    bluetoothSocket?.let { socket ->
+                        val bytesAvailable = socket.inputStream.available()
+                        if (bytesAvailable != 0) {
+                             //데이터가 수신된 경우
+                            val bufferBytes = ByteArray(bytesAvailable)
+                            socket.inputStream.read(bufferBytes)
+
+                            if (bufferBytes[0].toInt() == -1 && bufferBytes[1].toInt() == -40 ){
+                                bitArray = byteArrayOf()//새로운 이미지 들어올시 초기화
+                                bitArray = bitArray.plus(bufferBytes)
+                            }else if(bufferBytes[0].toInt() == 77 && bufferBytes[1].toInt() == 49 && bufferBytes[2].toInt() == 79){
+                                if(bufferBytes[3].toInt() == 78){
+                                    //사물인식 시작
+                                    writeOnBluetooth(0)
+                                    bluetoothReadState = true
+                                }else{
+                                    //사물인식 종료
+                                    bluetoothReadState = false
+                                }
+                            }else{
+                                bitArray = bitArray.plus(bufferBytes)
+                                if (bitArray[bitArray.size-2].toInt() == -1 && bitArray[bitArray.size-1].toInt() == -39) {
+                                    val bitmap = BitmapFactory.decodeByteArray(bitArray, 0, bitArray.size)//이미지 변환
+                                    imageClassifierHelper.classify(bitmap, Surface.ROTATION_90)//텐서플로우로 이미지 식별
+                                    if (bluetoothReadState)//종료되기 전까지 이미지 계속 전달받기
+                                        writeOnBluetooth(0)
+                                }
+                            }
+                        }
+                    }
+                } catch (e: UnsupportedEncodingException) {
+                    e.printStackTrace()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
         }
+        //데이터 수신 thread 시작
+        mBluetoothThread.start()
     }
 
     private fun writeOnBluetooth(number: Int) {
         bluetoothSocket?.let { socket ->
-            socket.outputStream.write(ByteArray(1) { number.toByte() })
+            socket.outputStream.write(number.toString().toByteArray(Charset.defaultCharset()))
         }
     }
 
@@ -388,6 +462,9 @@ class MainActivity : ComponentActivity() {
 
         if(::bluetoothReceiver.isInitialized)
             unregisterReceiver(bluetoothReceiver)
+
+        if (mBluetoothThread.isAlive)
+            mBluetoothThread.interrupt()
 
         bluetoothAdapter = null
 

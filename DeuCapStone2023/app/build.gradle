@@ -5,6 +5,7 @@ plugins {
     id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
     id "com.google.protobuf" version "0.8.17"
+    id 'de.undercouch.download'
 }
 
 android {
@@ -49,6 +50,10 @@ android {
         }
     }
 }
+//DownloadModels tensorflow
+project.ext.ASSET_DIR = projectDir.toString() + '/src/main/assets'
+project.ext.TEST_ASSETS_DIR = projectDir.toString() + '/src/androidTest/assets'
+apply from: 'download_models.gradle'
 
 dependencies {
 
@@ -123,6 +128,11 @@ dependencies {
 
     // locationService
     implementation 'com.google.android.gms:play-services-location:21.0.1'
+
+    //tensorflow
+    implementation 'org.tensorflow:tensorflow-lite-task-vision:0.4.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu-delegate-plugin:0.4.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.9.0'
 }
 
 protobuf {
