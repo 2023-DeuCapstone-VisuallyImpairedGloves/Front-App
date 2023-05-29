@@ -1,6 +1,6 @@
 package com.example.deucapstone2023.di
 
-import com.example.deucapstone2023.data.datasource.remote.ApiService
+import com.example.deucapstone2023.data.datasource.remote.api.TmapApi
 import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
@@ -41,8 +41,8 @@ object RetrofitModule {
 
     @Singleton
     @Provides
-    fun createRestaurantService(retrofit: Retrofit): ApiService {
-        return retrofit.create(ApiService::class.java)
+    fun createRestaurantService(retrofit: Retrofit): TmapApi {
+        return retrofit.create(TmapApi::class.java)
     }
 
 }

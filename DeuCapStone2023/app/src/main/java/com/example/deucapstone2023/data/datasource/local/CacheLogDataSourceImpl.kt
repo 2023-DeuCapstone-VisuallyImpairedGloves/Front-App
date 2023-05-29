@@ -1,6 +1,6 @@
 package com.example.deucapstone2023.data.datasource.local
 
-import com.example.deucapstone2023.data.datasource.local.database.dao.LocalService
+import com.example.deucapstone2023.data.datasource.local.database.dao.CacheLocal
 import com.example.deucapstone2023.data.datasource.local.database.entity.AzimuthSensor
 import com.example.deucapstone2023.data.datasource.local.database.entity.DistanceSensor
 import com.example.deucapstone2023.data.datasource.local.database.entity.ObstacleSensor
@@ -8,9 +8,9 @@ import com.example.deucapstone2023.data.datasource.local.database.entity.UserLoc
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class LocalLogDataSourceImpl @Inject constructor(
-    private val localService: LocalService
-): LocalLogDatasource {
+class CacheLogDataSourceImpl @Inject constructor(
+    private val localService: CacheLocal
+): CacheLogDatasource {
 
     override suspend fun setUserLocation(userLocation: UserLocation) {
         localService.setUserLocation(userLocation)

@@ -3,7 +3,7 @@ package com.example.deucapstone2023.di
 import android.content.Context
 import androidx.room.Room
 import com.example.deucapstone2023.data.datasource.local.database.Database
-import com.example.deucapstone2023.data.datasource.local.database.dao.LocalService
+import com.example.deucapstone2023.data.datasource.local.database.dao.CacheLocal
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +25,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun providesDatabaseDao(database: Database): LocalService {
+    fun providesDatabaseDao(database: Database): CacheLocal {
         return database.localDao()
     }
 }

@@ -1,6 +1,6 @@
 package com.example.deucapstone2023.data.repositoryimpl
 
-import com.example.deucapstone2023.data.datasource.local.LocalLogDatasource
+import com.example.deucapstone2023.data.datasource.local.CacheLogDatasource
 import com.example.deucapstone2023.data.datasource.local.database.entity.AzimuthSensor
 import com.example.deucapstone2023.data.datasource.local.database.entity.DistanceSensor
 import com.example.deucapstone2023.data.datasource.local.database.entity.ObstacleSensor
@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class LogRepositoryImpl @Inject constructor(
-    private val localInfoDatasource: LocalLogDatasource
+    private val localInfoDatasource: CacheLogDatasource
 ) : LogRepository {
 
     override suspend fun setUserLocation(userLocation: UserLocation) {

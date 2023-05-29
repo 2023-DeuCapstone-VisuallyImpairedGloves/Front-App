@@ -83,29 +83,39 @@ class SearchViewModel @Inject constructor(
         navigationManager.destinationInfo = poi
     }
 
-    fun navigateRouteOnMap(azimuth: Double,quitNavigation: () -> Unit, voiceOutput: (String) -> Unit) {
-        try{ navigationManager.navigateRouteOnMap(
-            routeList = searchUiState.value.routeList,
-            source = searchUiState.value.location,
-            azimuth = getAzimuthFromValue(azimuth),
-            voiceOutput = voiceOutput,
-            quitNavigation = {
-                _searchUiState.update { state -> state.copy(routeList = emptyList()) }
-                quitNavigation()
-            },
-            requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) },
-            context = context,
-            setUserLocationOnDatabase = { userLocation -> setUserLocationOnDatabase(userLocation) },
-            setAzimuthSensorOnDatabase = { sensorInfo -> setAzimuthSensorOnDatabase(sensorInfo)},
-            setIndex = {index -> setIndex(index)}
-        ) }
-        catch (e:Exception) {
-            when(e) {
+    fun navigateRouteOnMap(
+        azimuth: Double,
+        quitNavigation: () -> Unit,
+        voiceOutput: (String) -> Unit
+    ) {
+        try {
+            navigationManager.navigateRouteOnMap(
+                routeList = searchUiState.value.routeList,
+                source = searchUiState.value.location,
+                azimuth = getAzimuthFromValue(azimuth),
+                voiceOutput = voiceOutput,
+                quitNavigation = {
+                    _searchUiState.update { state -> state.copy(routeList = emptyList()) }
+                    quitNavigation()
+                },
+                requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) },
+                context = context,
+                setUserLocationOnDatabase = { userLocation -> setUserLocationOnDatabase(userLocation) },
+                setAzimuthSensorOnDatabase = { sensorInfo -> setAzimuthSensorOnDatabase(sensorInfo) },
+                setIndex = { index -> setIndex(index) }
+            )
+        } catch (e: Exception) {
+            when (e) {
                 is IndexOutOfBoundsException -> {
-                    Toast.makeText(context,"index: ${navigationManager.recentLineInfoIndex}",Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        "index: ${navigationManager.recentLineInfoIndex}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
+
                 else -> {
-                    Toast.makeText(context,"${e.message}",Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }

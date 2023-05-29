@@ -24,17 +24,6 @@ interface NavigationManager {
         setIndex: (SensorInfo) -> Unit
     )
 
-    fun guideStartDistance(
-        route: RouteState,
-        voiceOutput: (String) -> Unit
-    )
-
-    fun guideRemainDistance(
-        routeList: List<RouteState>,
-        voiceOutput: (String) -> Unit,
-        quitNavigation: () -> Unit
-    )
-
     fun getDistanceFromSource(source: Location, dest: Location): Int
 
     fun calculateAzimuth(source: Location, dest: Location): Double

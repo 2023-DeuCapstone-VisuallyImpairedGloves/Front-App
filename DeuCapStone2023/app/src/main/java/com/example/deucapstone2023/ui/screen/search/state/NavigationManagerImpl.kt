@@ -197,7 +197,7 @@ class NavigationManagerImpl(
 
     }
 
-    override fun guideStartDistance(
+    private fun guideStartDistance(
         route: RouteState,
         voiceOutput: (String) -> Unit
     ) {
@@ -210,7 +210,7 @@ class NavigationManagerImpl(
         }
     }
 
-    override fun guideRemainDistance(
+    private fun guideRemainDistance(
         routeList: List<RouteState>,
         voiceOutput: (String) -> Unit,
         quitNavigation: () -> Unit

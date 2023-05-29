@@ -38,16 +38,6 @@ fun BluetoothControlSetting(
     setStatus: (ButtonStatus) -> Unit,
     showSnackBar: (String) -> Unit
 ) {
-    when (status) {
-        ButtonStatus.ON -> {
-            showSnackBar("자동 연결이 활성화 되었습니다.")
-        }
-
-        ButtonStatus.OFF -> {
-            showSnackBar("자동 연결이 비활성화 되었습니다.")
-        }
-    }
-
     val indicatorBias by animateFloatAsState(
         when (status) {
             ButtonStatus.ON -> 1f
@@ -85,6 +75,7 @@ fun BluetoothControlSetting(
                         .clip(RoundedCornerShape(100.dp))
                         .clickable {
                             setStatus(ButtonStatus.OFF)
+                            showSnackBar("자동 연결이 비활성화 되었습니다.")
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -102,6 +93,7 @@ fun BluetoothControlSetting(
                         .clip(RoundedCornerShape(100.dp))
                         .clickable {
                             setStatus(ButtonStatus.ON)
+                            showSnackBar("자동 연결이 활성화 되었습니다.")
                         },
                     contentAlignment = Alignment.Center
                 ) {

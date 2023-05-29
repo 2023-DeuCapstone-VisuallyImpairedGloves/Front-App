@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,7 +22,10 @@ import kotlinx.coroutines.launch
 fun SettingScreen(
     settingViewModel: SettingViewModel
 ) {
-    val settingUiState by settingViewModel.settingUiState.collectAsStateWithLifecycle()
+    val settingUiState by settingViewModel.settingUiState.collectAsStateWithLifecycle(
+        lifecycleOwner = LocalLifecycleOwner.current,
+        initialValue = SettingUiState.getInitValues()
+    )
 
     SettingScreen(
         settingUiState = settingUiState,

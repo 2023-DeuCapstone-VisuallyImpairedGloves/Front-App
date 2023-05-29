@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.catch
 import java.io.IOException
 import javax.inject.Inject
 
-class LocalSettingDatasourceImpl @Inject constructor(
+class CacheSettingDatasourceImpl @Inject constructor(
     private val datastore: DataStore<SettingPreferences>
-) : LocalSettingDatasource {
+) : CacheSettingDatasource {
     override fun getConnectionStatus(): Flow<SettingPreferences> =
         datastore.data.catch { e ->
             if (e is IOException)
