@@ -1,4 +1,4 @@
-# 2023 4-1 캡스톤디자인 "시각장애인을 위한 길안내 및 위험탐지 앱"
+# 2023 캡스톤 "시각장애인을 위한 길안내 및 위험탐지 앱"
 
 ## Intro
 
@@ -29,6 +29,8 @@ GPS정보와 방위정보를 이용하여 시각장애인이 원하는 목적지
 
 ## Architecture ( Clean + MVVM )
 
+![architecture](https://github.com/2023-DeuCapstone-VisuallyImpairedGloves/Front-App/assets/75519689/45525498-04f8-488c-b937-55a7626c5b04)
+
 ## Main Point
 
  > TmapApi로 받은 데이터로 경로 안내 제공
@@ -49,6 +51,10 @@ GPS정보와 방위정보를 이용하여 시각장애인이 원하는 목적지
  > SpeechRecognizer 로 음성인식 할 경우 외부 음악플레이어의 pausing 해결 불가
 
  - SpeechRecognizer가 Service로 백그라운드에서 무한루프로 돌면서 음성 인식 대기를 하도록 구현했기 때문에 외부의 audio가 pausing되는데 그렇지 않게 할수 없었고, 해결 필요함.
+
+## Period
+
+#### 2023.04.25~ 2023.05.30
 
 ## Member
 
