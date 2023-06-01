@@ -8,21 +8,16 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deucapstone2023.R
-import com.example.deucapstone2023.data.datasource.local.database.entity.AzimuthSensor
-import com.example.deucapstone2023.data.datasource.local.database.entity.UserLocation
 import com.example.deucapstone2023.domain.model.POIModel
-import com.example.deucapstone2023.domain.usecase.LogUsecase
 import com.example.deucapstone2023.domain.usecase.POIUsecase
 import com.example.deucapstone2023.domain.usecase.RouteUsecase
 import com.example.deucapstone2023.ui.base.getAzimuthFromValue
-import com.example.deucapstone2023.ui.screen.list.state.SensorInfo
-import com.example.deucapstone2023.ui.screen.list.state.toAzimuthSensor
-import com.example.deucapstone2023.ui.screen.list.state.toDistanceSensor
 import com.example.deucapstone2023.ui.screen.search.state.Location
-import com.example.deucapstone2023.ui.screen.search.state.NavigationManager
 import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.ui.screen.search.state.RouteState
+import com.example.deucapstone2023.ui.screen.search.state.toLineModel
 import com.example.deucapstone2023.ui.screen.search.state.toPOIListState
+import com.example.deucapstone2023.ui.screen.search.state.toRouteListModel
 import com.example.deucapstone2023.ui.screen.search.state.toRouteListState
 import com.example.deucapstone2023.utils.catchFetching
 import com.skt.tmap.TMapPoint
@@ -49,13 +44,15 @@ sealed class SearchEventFlow {
 @Stable
 data class SearchUiState(
     val location: Location,
-    val routeList: List<RouteState>
+    val routeList: List<RouteState>,
+    val destinationInfo: POIState
 ) {
     companion object {
         fun getInitValues(lat: Double = 35.15130665819491, lon: Double = 129.02657807928898) =
             SearchUiState(
                 location = Location(latitude = lat, longitude = lon),
-                routeList = emptyList()
+                routeList = emptyList(),
+                destinationInfo = POIState.getInitValues()
             )
     }
 }
@@ -64,8 +61,6 @@ data class SearchUiState(
 class SearchViewModel @Inject constructor(
     private val poiUsecase: POIUsecase,
     private val routeUsecase: RouteUsecase,
-    private val logUsecase: LogUsecase,
-    val navigationManager: NavigationManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -79,8 +74,8 @@ class SearchViewModel @Inject constructor(
         state.copy(location = Location(latitude = lat, longitude = lon))
     }
 
-    fun setDestinationInfo(poi: POIState) {
-        navigationManager.destinationInfo = poi
+    fun setDestinationInfo(destinationInfo: POIState) = _searchUiState.update { state ->
+        state.copy(destinationInfo = destinationInfo)
     }
 
     fun navigateRouteOnMap(
@@ -88,45 +83,50 @@ class SearchViewModel @Inject constructor(
         quitNavigation: () -> Unit,
         voiceOutput: (String) -> Unit
     ) {
-        try {
-            navigationManager.navigateRouteOnMap(
-                routeList = searchUiState.value.routeList,
-                source = searchUiState.value.location,
-                azimuth = getAzimuthFromValue(azimuth),
-                voiceOutput = voiceOutput,
-                quitNavigation = {
-                    _searchUiState.update { state -> state.copy(routeList = emptyList()) }
-                    quitNavigation()
-                },
-                requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) },
-                context = context,
-                setUserLocationOnDatabase = { userLocation -> setUserLocationOnDatabase(userLocation) },
-                setAzimuthSensorOnDatabase = { sensorInfo -> setAzimuthSensorOnDatabase(sensorInfo) },
-                setIndex = { index -> setIndex(index) }
-            )
-        } catch (e: Exception) {
-            when (e) {
-                is IndexOutOfBoundsException -> {
-                    Toast.makeText(
-                        context,
-                        "index: ${navigationManager.recentLineInfoIndex}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+        viewModelScope.launch {
+            try {
+                routeUsecase.navigateRouteOnMap(
+                    routeList = searchUiState.value.routeList.toRouteListModel(),
+                    source = searchUiState.value.location.toLineModel(),
+                    azimuth = getAzimuthFromValue(azimuth),
+                    voiceOutput = voiceOutput,
+                    quitNavigation = {
+                        _searchUiState.update { state -> state.copy(routeList = emptyList()) }
+                        quitNavigation()
+                    },
+                    requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) },
+                    context = context
+                )
+            } catch (e: Exception) {
+                when (e) {
+                    is IndexOutOfBoundsException -> {
+                        Toast.makeText(
+                            context,
+                            "index: ",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
 
-                else -> {
-                    Toast.makeText(context, "${e.message}", Toast.LENGTH_LONG).show()
+                    else -> {
+                        Toast.makeText(context, "${e.message}", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }
     }
 
-    private fun requestPedestrianRoute(voiceOutput: (String) -> Unit) {
-        getRoutePedestrian(appKey = context.getString(R.string.T_Map_key))
-        voiceOutput("경로를 이탈 했습니다. 경로를 재 요청 합니다.")
+    private fun requestPedestrianRoute(
+        voiceOutput: (String) -> Unit
+    ) {
+        getRoutePedestrian(
+            appKey = context.getString(R.string.T_Map_key),
+            guideVoiceMessage = {
+                voiceOutput("경로를 이탈 했습니다. 경로를 재 요청 합니다.")
+            }
+        )
     }
 
-    fun searchPlaceOnTyping(appKey: String, place: String) =
+    fun searchPlaceOnTyping(appKey: String, place: String, voiceOutput: (String) -> Unit) =
         poiUsecase.getPOISearch(
             poiModel = POIModel(
                 name = place,
@@ -140,9 +140,13 @@ class SearchViewModel @Inject constructor(
             ),
             appKey = appKey
         ).onEach { poiList ->
-            val poi = poiList.toPOIListState().first()
-            setDestinationInfo(poi)
-            getRoutePedestrian(context.getString(R.string.T_Map_key))
+            setDestinationInfo(poiList.toPOIListState().first())
+            getRoutePedestrian(
+                appKey = context.getString(R.string.T_Map_key),
+                guideVoiceMessage = {
+                    voiceOutput("경로 안내를 시작합니다.")
+                }
+            )
         }.catchFetching(
             onFailedHttpException = {},
             onFailedElseException = {}
@@ -162,7 +166,6 @@ class SearchViewModel @Inject constructor(
             ),
             appKey = appKey
         ).onEach { poiList ->
-            setDestinationInfo(poiList.toPOIListState().first())
             emitEventFlow(SearchEventFlow.POIList(poiList.toPOIListState()))
         }.catchFetching(
             onFailedHttpException = {},
@@ -182,7 +185,6 @@ class SearchViewModel @Inject constructor(
             makeMarker(this)
         }
 
-
     fun makeMarker(poi: POIState) =
         TMapMarkerItem().apply {
             icon =
@@ -192,14 +194,17 @@ class SearchViewModel @Inject constructor(
             id = poi.name
         }
 
-    fun getRoutePedestrian(appKey: String) =
+    fun getRoutePedestrian(
+        appKey: String,
+        guideVoiceMessage: () -> Unit
+    ) =
         routeUsecase.getRoutePedestrian(
             appKey = appKey,
             startLatitude = searchUiState.value.location.latitude,
             startLongitude = searchUiState.value.location.longitude,
-            destinationPoiId = navigationManager.destinationInfo.id.toString(),
-            destinationLatitude = navigationManager.destinationInfo.latitude,
-            destinationLongitude = navigationManager.destinationInfo.longitude
+            destinationPoiId = searchUiState.value.destinationInfo.id.toString(),
+            destinationLatitude = searchUiState.value.destinationInfo.latitude,
+            destinationLongitude = searchUiState.value.destinationInfo.longitude
         ).onEach { routeModels ->
             val route = routeModels.toRouteListState()
             _searchUiState.update { state ->
@@ -207,11 +212,8 @@ class SearchViewModel @Inject constructor(
                     routeList = route,
                 )
             }
-            navigationManager.apply {
-                recentDistance = route.first().totalDistance
-                routeIndex = 0
-                recentLineInfoIndex = 0
-            }
+            routeUsecase.setInitNavigation(route.first().totalDistance)
+            guideVoiceMessage()
 
         }.catchFetching(
             onFailedHttpException = { e ->
@@ -221,30 +223,6 @@ class SearchViewModel @Inject constructor(
                 Log.d("tests", "error : ${e.message} , ${e.printStackTrace()}}")
             }
         ).launchIn(viewModelScope)
-
-    private fun setUserLocationOnDatabase(
-        userLocation: UserLocation
-    ) {
-        viewModelScope.launch {
-            logUsecase.setUserLocation(userLocation)
-        }
-    }
-
-    private fun setAzimuthSensorOnDatabase(
-        azimuthSensor: SensorInfo
-    ) {
-        viewModelScope.launch {
-            logUsecase.setAzimuthSensor(azimuthSensor.toAzimuthSensor())
-        }
-    }
-
-    private fun setIndex(
-        index: SensorInfo
-    ) {
-        viewModelScope.launch {
-            logUsecase.setDistanceSensor(index.toDistanceSensor())
-        }
-    }
 
     private fun emitEventFlow(state: SearchEventFlow) {
         viewModelScope.launch {

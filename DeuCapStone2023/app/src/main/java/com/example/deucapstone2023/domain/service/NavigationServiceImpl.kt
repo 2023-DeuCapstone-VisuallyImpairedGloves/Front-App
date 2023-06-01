@@ -1,40 +1,42 @@
-package com.example.deucapstone2023.ui.screen.search.state
+package com.example.deucapstone2023.domain.service
 
 import android.content.Context
 import android.widget.Toast
 import com.example.deucapstone2023.data.datasource.local.database.entity.UserLocation
+import com.example.deucapstone2023.domain.model.LineModel
+import com.example.deucapstone2023.domain.model.RouteModel
+import com.example.deucapstone2023.domain.repository.LogRepository
 import com.example.deucapstone2023.ui.base.AzimuthType
 import com.example.deucapstone2023.ui.base.PointType
 import com.example.deucapstone2023.ui.base.getAzimuthFromValue
 import com.example.deucapstone2023.ui.screen.list.state.SensorInfo
-import com.example.deucapstone2023.utils.date
+import com.example.deucapstone2023.ui.screen.list.state.toAzimuthSensor
+import com.example.deucapstone2023.ui.screen.list.state.toDistanceSensor
+import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.utils.getCurrentTime
-import com.example.deucapstone2023.utils.hour
-import com.example.deucapstone2023.utils.minute
-import com.example.deucapstone2023.utils.month
-import com.example.deucapstone2023.utils.second
-import com.example.deucapstone2023.utils.year
 import com.skt.tmap.MapUtils
-import java.util.Calendar
+import javax.inject.Inject
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
-class NavigationManagerImpl(
-    override var routeIndex: Int,
-    override var recentDistance: Int,
-    override var destinationInfo: POIState,
-    override var recentLineInfoIndex: Int
-) : NavigationManager {
+class NavigationServiceImpl @Inject constructor(
+    private val logRepository: LogRepository
+) : NavigationService {
 
+    var routeIndex: Int = 0
+    var recentDistance: Int = 0
+    var recentLineInfoIndex: Int = 0
+
+    /*
     constructor() : this(
         routeIndex = 0,
         recentDistance = 0,
         destinationInfo = POIState.getInitValues(),
         recentLineInfoIndex = 0
-    )
+    )*/
 
-    override fun getDistanceFromSource(source: Location, dest: Location): Int =
+    override fun getDistanceFromSource(source: LineModel, dest: LineModel): Int =
         MapUtils.getDistance(
             source.latitude,
             source.longitude,
@@ -42,7 +44,7 @@ class NavigationManagerImpl(
             dest.longitude
         ).toInt()
 
-    override fun calculateAzimuth(source: Location, dest: Location): Double {
+    override fun calculateAzimuth(source: LineModel, dest: LineModel): Double {
         val lat1 = source.latitude * Math.PI / 180
         val lat2 = dest.latitude * Math.PI / 180
         val lon1 = source.longitude * Math.PI / 180
@@ -54,7 +56,7 @@ class NavigationManagerImpl(
         return (seta * 180 / Math.PI + 360) % 360
     }
 
-    override fun checkAzimuthDeviceWithLineInfo(azimuth: AzimuthType, route: RouteState): Boolean =
+    override fun checkAzimuthDeviceWithLineInfo(azimuth: AzimuthType, route: RouteModel): Boolean =
         azimuth == getAzimuthFromValue(
             calculateAzimuth(
                 source = route.lineInfo[recentLineInfoIndex],
@@ -62,24 +64,20 @@ class NavigationManagerImpl(
             )
         )
 
-    override fun navigateRouteOnMap(
-        routeList: List<RouteState>,
-        source: Location,
+    override suspend fun navigateRouteOnMap(
+        routeList: List<RouteModel>,
+        source: LineModel,
         azimuth: AzimuthType,
         voiceOutput: (String) -> Unit,
         quitNavigation: () -> Unit,
         requestPedestrianRoute: ((String) -> Unit) -> Unit,
-        context: Context,
-        setUserLocationOnDatabase: (UserLocation) -> Unit,
-        setAzimuthSensorOnDatabase: (SensorInfo) -> Unit,
-        setIndex: (SensorInfo) -> Unit
+        context: Context
     ) {
         val route = routeList[routeIndex]
-        val halfPoint = route.totalDistance.div(2)
 
         if (recentDistance - getDistanceFromSource(
                 source = source,
-                dest = Location(route.destinationLatitude, route.destinationLongitude)
+                dest = LineModel(route.destinationLatitude, route.destinationLongitude)
             ) < 10
             && !checkAzimuthDeviceWithLineInfo(azimuth, route)
         ) {
@@ -95,26 +93,28 @@ class NavigationManagerImpl(
                     )
                 }, index: $recentLineInfoIndex", Toast.LENGTH_LONG
             ).show()
-            setAzimuthSensorOnDatabase(
+
+            logRepository.setAzimuthSensor(
                 SensorInfo(
                     id = 0,
                     status = "false",
                     desc = azimuth.name,
                     date = getCurrentTime()
-                )
+                ).toAzimuthSensor()
             )
+
         } else {
             if (recentDistance > getDistanceFromSource(
                     source = source,
-                    dest = Location(route.destinationLatitude, route.destinationLongitude)
+                    dest = LineModel(route.destinationLatitude, route.destinationLongitude)
                 ) && recentDistance <= route.totalDistance
             ) {
                 // 정상경로 -> LineString 정보를 활용 해서 현 위치 에서의 description 을 안내 해야함
                 recentDistance = getDistanceFromSource(
                     source = source,
-                    dest = Location(route.destinationLatitude, route.destinationLongitude)
+                    dest = LineModel(route.destinationLatitude, route.destinationLongitude)
                 )
-                setUserLocationOnDatabase(
+                logRepository.setUserLocation(
                     UserLocation(
                         id = 0,
                         date = getCurrentTime(),
@@ -122,26 +122,28 @@ class NavigationManagerImpl(
                         longitude = source.longitude,
                         nearPoiName = route.name,
                         source = routeList.first().name,
-                        dest = destinationInfo.name
+                        dest = routeList.last().name
                     )
                 )
-                setAzimuthSensorOnDatabase(
+                logRepository.setAzimuthSensor(
                     SensorInfo(
                         id = 0,
                         status = "true",
                         desc = azimuth.name,
                         date = getCurrentTime()
-                    )
+                    ).toAzimuthSensor()
                 )
-                setIndex(
+
+                logRepository.setDistanceSensor(
                     SensorInfo(
                         id = 0,
                         status = recentLineInfoIndex.toString(),
                         desc = "${source.latitude} ${source.longitude}",
                         date = getCurrentTime()
-                    )
+                    ).toDistanceSensor()
                 )
 
+                val halfPoint = route.totalDistance.div(2)
                 if (recentDistance >= halfPoint - 10 && recentDistance <= halfPoint + 10) {
                     guideRemainDistance(routeList = routeList, voiceOutput, quitNavigation)
                 } else {
@@ -188,7 +190,7 @@ class NavigationManagerImpl(
                     context, "total: ${route.totalDistance}, remain: $recentDistance, actual: ${
                         getDistanceFromSource(
                             source = source,
-                            dest = Location(route.destinationLatitude, route.destinationLongitude)
+                            dest = LineModel(route.destinationLatitude, route.destinationLongitude)
                         )
                     }", Toast.LENGTH_LONG
                 ).show()
@@ -198,7 +200,7 @@ class NavigationManagerImpl(
     }
 
     private fun guideStartDistance(
-        route: RouteState,
+        route: RouteModel,
         voiceOutput: (String) -> Unit
     ) {
         when (route.pointType) {
@@ -211,7 +213,7 @@ class NavigationManagerImpl(
     }
 
     private fun guideRemainDistance(
-        routeList: List<RouteState>,
+        routeList: List<RouteModel>,
         voiceOutput: (String) -> Unit,
         quitNavigation: () -> Unit
     ) {
@@ -233,5 +235,11 @@ class NavigationManagerImpl(
                 }
             }
         }
+    }
+
+    override fun setInitValues(totalDistance: Int) {
+        recentDistance = totalDistance
+        routeIndex = 0
+        recentLineInfoIndex = 0
     }
 }

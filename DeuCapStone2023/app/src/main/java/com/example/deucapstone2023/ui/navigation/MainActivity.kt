@@ -152,8 +152,8 @@ class MainActivity : ComponentActivity() {
 
                     if(searchUiState.latitude != 0.0)
                         flag = true
-                    if(searchViewModel.navigationManager.routeIndex == 1)
-                        flag2 = true
+                    /*if(searchViewModel.navigationManager.routeIndex == 1)
+                        flag2 = true*/
                 }
             }
             launch {

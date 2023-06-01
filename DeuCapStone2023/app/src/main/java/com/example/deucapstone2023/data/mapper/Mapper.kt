@@ -6,6 +6,9 @@ import com.example.deucapstone2023.data.dto.response.poi.RouteResponse
 import com.example.deucapstone2023.domain.model.LineModel
 import com.example.deucapstone2023.domain.model.POIModel
 import com.example.deucapstone2023.domain.model.RouteModel
+import com.example.deucapstone2023.ui.base.FacilityType
+import com.example.deucapstone2023.ui.base.PointType
+import com.example.deucapstone2023.ui.base.TurnType
 import com.skt.tmap.MapUtils
 
 fun POIModel.toRequestDTO(appKey: String) = mutableMapOf<String, String>().apply {
@@ -62,9 +65,9 @@ fun RouteResponse.toRouteModel() = this.run {
                         RouteModel(
                             name = routeName,
                             description = routeDescription,
-                            turnType = routeTurnType,
-                            pointType = routePointType,
-                            facilityType = routeFacilityType,
+                            turnType = TurnType.getType(routeTurnType),
+                            pointType = PointType.getType(routePointType),
+                            facilityType = FacilityType.getType(routeFacilityType),
                             startLatitude = startLatitude,
                             startLongitude = startLongitude,
                             destinationLatitude = destinationLatitude,
@@ -95,9 +98,9 @@ fun RouteResponse.toRouteModel() = this.run {
                         RouteModel(
                             name = routeName,
                             description = routeDescription,
-                            turnType = routeTurnType,
-                            pointType = routePointType,
-                            facilityType = routeFacilityType,
+                            turnType = TurnType.getType(routeTurnType),
+                            pointType = PointType.getType(routePointType),
+                            facilityType = FacilityType.getType(routeFacilityType),
                             startLatitude = startLatitude,
                             startLongitude = startLongitude,
                             destinationLatitude = destinationLatitude,

@@ -1,11 +1,15 @@
 package com.example.deucapstone2023.domain.model
 
+import com.example.deucapstone2023.ui.base.FacilityType
+import com.example.deucapstone2023.ui.base.PointType
+import com.example.deucapstone2023.ui.base.TurnType
+
 data class RouteModel(
     val name: String,
     val description: String,
-    val turnType: Int,
-    val pointType: String,
-    val facilityType: Int,
+    val turnType: TurnType,
+    val pointType: PointType,
+    val facilityType: FacilityType,
     val startLatitude: Double,
     val startLongitude: Double,
     val destinationLatitude: Double,
@@ -18,9 +22,9 @@ data class RouteModel(
         fun getInitValues() = RouteModel(
             name = "",
             description = "",
-            turnType = 0,
-            pointType = "",
-            facilityType = 0,
+            turnType = TurnType.NO_GUIDANCE1,
+            pointType = PointType.INIT,
+            facilityType = FacilityType.INIT,
             startLatitude = 0.0,
             startLongitude = 0.0,
             destinationLatitude = 0.0,

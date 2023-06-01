@@ -17,7 +17,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,10 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,7 +49,6 @@ import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.ui.service.SpeechService
 import com.example.deucapstone2023.ui.theme.DeuCapStone2023Theme
 import com.example.deucapstone2023.ui.theme.blue
-import com.example.deucapstone2023.utils.addFocusCleaner
 import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -261,7 +257,8 @@ fun HomeScreen(
         onNavigateToNaviScreen = {
             searchViewModel::searchPlaceOnTyping.invoke(
                 context.getString(R.string.T_Map_key),
-                homeUiState.title
+                homeUiState.title,
+                voiceOutput
             )
         }
     )
@@ -281,7 +278,7 @@ private fun HomeScreen(
     checkIsSpeaking: suspend () -> Unit,
     voiceOutput: (String) -> Unit,
     makeMarker: (POIState) -> TMapMarkerItem,
-    getRoutePedestrian: (String) -> Unit,
+    getRoutePedestrian: (String, () -> Unit) -> Unit,
     setSpeechRecognizerListener: (CommonRecognitionListener) -> Unit,
     setDestinationInfo: (POIState) -> Unit,
     navigateRouteOnMap: (Double, () -> Unit, (String) -> Unit) -> Unit
@@ -361,14 +358,17 @@ private fun HomeScreen(
                                         // poi로 경로설정
                                         repeatFlag = false
 
-                                        setDestinationInfo(poi)
-
                                         tMapView.apply {
                                             removeTMapMarkerItem(poi.name)
                                             addTMapMarkerItem(makeMarker(poi))
                                         }
 
-                                        getRoutePedestrian(context.getString(R.string.T_Map_key))
+                                        setDestinationInfo(poi)
+
+                                        getRoutePedestrian(
+                                            context.getString(R.string.T_Map_key),
+                                            { voiceOutput("경로 안내를 시작합니다.") }
+                                        )
 
                                     } else if (userSpeech2[0].contains(Regex("^(?=.*(?:아니|틀렸)).+\$"))) {
                                         if (index == 3) {
@@ -464,7 +464,7 @@ private fun PreviewHomeScreen() {
             checkIsSpeaking = {},
             voiceOutput = {},
             makeMarker = { TMapMarkerItem() },
-            getRoutePedestrian = {},
+            getRoutePedestrian = { _, _ -> },
             setSpeechRecognizerListener = {},
             setDestinationInfo = {},
             navigateRouteOnMap = { _, _, _ -> },
