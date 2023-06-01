@@ -37,6 +37,8 @@ GPS정보와 방위정보를 이용하여 시각장애인이 원하는 목적지
 
  - JSON 데이터를 DTO로 받아 알맞게 가공한뒤, 현재 위치의 변경 주기에 따라 위치의 이동폭 과 방위정보로 올바른 경로인지 확인 후 올바른 경로가 아닐 경우 경로 재요청
 
+![navigation_algorithm](https://github.com/2023-DeuCapstone-VisuallyImpairedGloves/Front-App/assets/75519689/d1d7f5f5-585c-4d9f-9299-b476b3b29020)
+
  > 전방의 위험물 인식 후 안내 제공
 
  - esp32에 부착된 cam module로 bluetooth 통신하여 사진을 전달받아 tensorflow - lite로 학습된 모델로 위험물 식별한뒤 esp32 에 부착된 진동모듈 및 TextToSpeech로 진동 + 음성안내
