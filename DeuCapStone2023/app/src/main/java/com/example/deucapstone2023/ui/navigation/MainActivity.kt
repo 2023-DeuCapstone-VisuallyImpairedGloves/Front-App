@@ -184,16 +184,12 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun Content(
-        bottomNavigationViewModel: NavigationViewModel = hiltViewModel()
-    ) {
-        val bottomState by bottomNavigationViewModel.bottomBarState.collectAsStateWithLifecycle()
+    private fun Content() {
         val navController = rememberNavController()
 
         Scaffold(
             bottomBar = {
-                if (bottomState)
-                    BottomNavigationGraph(navController = navController)
+                BottomNavigationGraph(navController = navController)
             }
         ) {
             Box(modifier = Modifier.padding(it)) {

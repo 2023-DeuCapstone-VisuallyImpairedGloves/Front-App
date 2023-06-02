@@ -94,8 +94,7 @@ class SearchViewModel @Inject constructor(
                         _searchUiState.update { state -> state.copy(routeList = emptyList()) }
                         quitNavigation()
                     },
-                    requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) },
-                    context = context
+                    requestPedestrianRoute = { requestPedestrianRoute(voiceOutput) }
                 )
             } catch (e: Exception) {
                 when (e) {

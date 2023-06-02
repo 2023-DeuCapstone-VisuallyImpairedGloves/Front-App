@@ -1,7 +1,6 @@
 package com.example.deucapstone2023.domain.service
 
-import android.content.Context
-import android.widget.Toast
+import android.util.Log
 import com.example.deucapstone2023.data.datasource.local.database.entity.UserLocation
 import com.example.deucapstone2023.domain.model.LineModel
 import com.example.deucapstone2023.domain.model.RouteModel
@@ -12,7 +11,6 @@ import com.example.deucapstone2023.ui.base.getAzimuthFromValue
 import com.example.deucapstone2023.ui.screen.list.state.SensorInfo
 import com.example.deucapstone2023.ui.screen.list.state.toAzimuthSensor
 import com.example.deucapstone2023.ui.screen.list.state.toDistanceSensor
-import com.example.deucapstone2023.ui.screen.search.state.POIState
 import com.example.deucapstone2023.utils.getCurrentTime
 import com.skt.tmap.MapUtils
 import javax.inject.Inject
@@ -27,14 +25,6 @@ class NavigationServiceImpl @Inject constructor(
     var routeIndex: Int = 0
     var recentDistance: Int = 0
     var recentLineInfoIndex: Int = 0
-
-    /*
-    constructor() : this(
-        routeIndex = 0,
-        recentDistance = 0,
-        destinationInfo = POIState.getInitValues(),
-        recentLineInfoIndex = 0
-    )*/
 
     override fun getDistanceFromSource(source: LineModel, dest: LineModel): Int =
         MapUtils.getDistance(
@@ -70,8 +60,7 @@ class NavigationServiceImpl @Inject constructor(
         azimuth: AzimuthType,
         voiceOutput: (String) -> Unit,
         quitNavigation: () -> Unit,
-        requestPedestrianRoute: ((String) -> Unit) -> Unit,
-        context: Context
+        requestPedestrianRoute: ((String) -> Unit) -> Unit
     ) {
         val route = routeList[routeIndex]
 
@@ -83,16 +72,16 @@ class NavigationServiceImpl @Inject constructor(
         ) {
             //경로 재요청
             requestPedestrianRoute(voiceOutput)
-            Toast.makeText(
-                context, "a - device: $azimuth route: ${
+            Log.d(
+                "test", "a - device: $azimuth route: ${
                     getAzimuthFromValue(
                         calculateAzimuth(
                             source = route.lineInfo[recentLineInfoIndex],
                             dest = route.lineInfo[recentLineInfoIndex + 1]
                         )
                     )
-                }, index: $recentLineInfoIndex", Toast.LENGTH_LONG
-            ).show()
+                }, index: $recentLineInfoIndex"
+            )
 
             logRepository.setAzimuthSensor(
                 SensorInfo(
@@ -149,7 +138,8 @@ class NavigationServiceImpl @Inject constructor(
                 } else {
                     // point 없이 linestring이 이어서 결합된 경우 -> 지정 description 안내 후 남은 거리 만큼 이동 추가 안내
                     if (route.totalDistance != route.description.filter { it.isDigit() }.toInt()) {
-                        if (route.description.filter { it.isDigit() }.toInt() > route.totalDistance - recentDistance
+                        if (route.description.filter { it.isDigit() }
+                                .toInt() > route.totalDistance - recentDistance
                             && route.totalDistance - recentDistance in 5..15
                         )
                             guideStartDistance(route, voiceOutput)
@@ -186,14 +176,14 @@ class NavigationServiceImpl @Inject constructor(
             } else {
                 //경로 재요청
                 requestPedestrianRoute(voiceOutput)
-                Toast.makeText(
-                    context, "total: ${route.totalDistance}, remain: $recentDistance, actual: ${
+                Log.d(
+                    "test", "total: ${route.totalDistance}, remain: $recentDistance, actual: ${
                         getDistanceFromSource(
                             source = source,
                             dest = LineModel(route.destinationLatitude, route.destinationLongitude)
                         )
-                    }", Toast.LENGTH_LONG
-                ).show()
+                    }"
+                )
             }
         }
 
