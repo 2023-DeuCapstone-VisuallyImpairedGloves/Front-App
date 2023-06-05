@@ -21,7 +21,7 @@
         android:minSdkVersion="33" />
 
     <application
-        android:name=".ui.MainApplication"
+        android:name="com.deucapstone2023.app.ui.MainApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -34,7 +34,7 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".ui.navigation.MainActivity"
+            android:name="com.deucapstone2023.app.ui.navigation.MainActivity"
             android:exported="true"
             android:label="@string/title_activity_main"
             android:theme="@style/Theme.DeuCapStone2023">

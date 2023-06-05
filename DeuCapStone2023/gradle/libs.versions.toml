@@ -1,0 +1,107 @@
+[versions]
+
+coreKtx = "1.10.0"
+appCompat = "1.6.1"
+activity = "1.7.1"
+material = "1.8.0"
+constraintLayout = "2.1.3"
+navigation = "2.5.3"
+composeBom = "2022.12.00"
+room = "2.5.1"
+lifecycle = "2.6.1"
+kotlin-coroutine = "1.7.1"
+dagger = "2.44"
+hilt = "1.1.0-alpha01"
+datastore = "1.0.0"
+protobuf = "3.18.0"
+retrofit2 = "2.9.0"
+okhttp3 = "4.9.3"
+junit = "4.13.2"
+android-test-ext = "1.1.5"
+espresso = "3.5.1"
+gms-service-location = "21.0.1"
+tensorflow-lite = "0.4.0"
+tensorflow-lite-gpu = "2.9.0"
+
+# plugin
+androidStudioGradlePlugin = "7.4.2"
+kotlin = "1.8.20"
+androidNavigationSafeargs ="2.5.3"
+protobufPlugin = "0.8.17"
+
+[libraries]
+
+core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appCompat" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+constraintLayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintLayout" }
+
+navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }
+navigation-ui = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation" }
+navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
+
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-material = { group = "androidx.compose.material", name = "material" }
+compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" }
+compose-ui-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+compose-viewBinding = { group = "androidx.compose.ui", name = "ui-viewbinding" }
+
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
+
+lifecycle-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycle" }
+
+coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlin-coroutine" }
+
+dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
+dagger-hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "dagger" }
+dagger-hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "dagger" }
+hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt" }
+
+datastore = { group = "androidx.datastore", name = "datastore", version.ref = "datastore" }
+protobuf = { group = "com.google.protobuf", name = "protobuf-javalite", version.ref = "protobuf" }
+
+square-retrofit2 = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit2" }
+square-retrofit2-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit2" }
+square-retrofit2-converter-scalars = { group = "com.squareup.retrofit2", name = "converter-scalars", version.ref = "retrofit2" }
+square-okhttp3-intercepter = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp3" }
+
+gms-play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "gms-service-location" }
+
+tensorflow-lite-task = { group = "org.tensorflow", name = "tensorflow-lite-task-vision", version.ref = "tensorflow-lite" }
+tensorflow-lite-gpu-delegate-plugin = { group = "org.tensorflow", name = "tensorflow-lite-gpu-delegate-plugin", version.ref = "tensorflow-lite" }
+tensorflow-lite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.ref = "tensorflow-lite-gpu" }
+
+jUnit = { group = "junit", name = "junit", version.ref = "junit" }
+test-ext = { group = "androidx.test.ext", name = "junit", version.ref = "android-test-ext" }
+test-espresso = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+
+[bundles]
+navigation = ["navigation-fragment","navigation-ui","navigation-compose"]
+compose = ["compose-material3", "compose-material", "compose-foundation", "compose-ui", "compose-ui-preview", "compose-viewBinding"]
+lifecycle = ["lifecycle-compose", "lifecycle-viewmodel-ktx", "lifecycle-runtime-ktx", "lifecycle-runtime-compose", "lifecycle-service"]
+coroutines = ["coroutines"]
+hilt = ["dagger-hilt-android"]
+datastore = ["datastore", "protobuf"]
+square = ["square-retrofit2", "square-retrofit2-converter-gson", "square-retrofit2-converter-scalars", "square-okhttp3-intercepter"]
+tensorflow = ["tensorflow-lite-task", "tensorflow-lite-gpu-delegate-plugin", "tensorflow-lite-gpu"]
+testing = ["jUnit", "test-ext", "test-espresso"]
+
+[plugins]
+
+android-application = { id = "com.android.application", version.ref = "androidStudioGradlePlugin" }
+android-library = { id = "com.android.library", version.ref = "androidStudioGradlePlugin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+android-navigation-safeargs = {id = "androidx.navigation.safeargs", version.ref = "androidNavigationSafeargs"}
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "dagger" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+protobuf = {id = "com.google.protobuf", version.ref = "protobufPlugin"}

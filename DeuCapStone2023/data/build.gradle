@@ -1,0 +1,57 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.protobuf)
+
+    id 'kotlin-kapt'
+}
+
+android {
+    namespace = "com.deucapstone2023.data"
+    compileSdk 33
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+
+
+dependencies {
+    implementation(project(":domain"))
+
+    kapt(libs.dagger.hilt.compiler)
+    implementation(libs.bundles.hilt)
+
+
+    implementation(libs.coroutines)
+    implementation(libs.bundles.square)
+    implementation(libs.bundles.datastore)
+
+    implementation(libs.room.ktx)
+    kapt(libs.room.compiler)
+    androidTestImplementation(libs.room.testing)
+
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.18.0"
+    }
+
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {
+                    option 'lite'
+                }
+            }
+        }
+    }
+}

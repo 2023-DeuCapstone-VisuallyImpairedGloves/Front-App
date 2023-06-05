@@ -1,0 +1,14 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace = "com.deucaptstone2023.domain"
+    compileSdk 33
+}
+
+dependencies {
+    implementation(libs.bundles.coroutines)
+    implementation(libs.dagger)
+}

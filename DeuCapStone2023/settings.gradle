@@ -14,3 +14,6 @@ dependencyResolutionManagement {
 }
 rootProject.name = "DeuCapStone2023"
 include ':app'
+include ':domain'
+include ':presentation'
+include ':data'
