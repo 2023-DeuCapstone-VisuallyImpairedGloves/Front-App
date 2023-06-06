@@ -59,6 +59,8 @@ dependencies {
 
     implementation(project(":domain"))
     implementation(project(":data"))
+    implementation project(":presentation:ui")
+    implementation(project(":presentation:design"))
 
     implementation(libs.core.ktx)
     implementation(libs.appcompat)
@@ -66,7 +68,6 @@ dependencies {
     implementation(libs.activity.compose)
 
     implementation(libs.bundles.hilt)
-    implementation project(path: ':presentation')
     kapt(libs.dagger.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
@@ -84,11 +85,4 @@ dependencies {
     testImplementation (libs.JUnit)
     androidTestImplementation (libs.test.ext)
     androidTestImplementation (libs.test.espresso)
-
-    implementation(libs.gms.play.services.location)
-
-    implementation files('libs/vsm-tmap-sdk-v2-android-1.6.60.aar')
-    implementation files('libs/tmap-sdk-1.2.aar')
-
-    implementation(libs.square.retrofit2)
 }

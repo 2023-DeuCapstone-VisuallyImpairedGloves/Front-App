@@ -9,6 +9,7 @@ navigation = "2.5.3"
 composeBom = "2022.12.00"
 room = "2.5.1"
 lifecycle = "2.6.1"
+lifecycle-common = "2.5.1"
 kotlin-coroutine = "1.7.1"
 dagger = "2.44"
 hilt = "1.1.0-alpha01"
@@ -58,7 +59,7 @@ lifecycle-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-
 lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
 lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycle" }
+lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycle-common" }
 
 coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlin-coroutine" }
 
