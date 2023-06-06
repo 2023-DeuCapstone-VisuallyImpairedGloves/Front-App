@@ -31,6 +31,10 @@ GPS정보와 방위정보를 이용하여 시각장애인이 원하는 목적지
 
 ![architecture](https://github.com/2023-DeuCapstone-VisuallyImpairedGloves/Front-App/assets/75519689/45525498-04f8-488c-b937-55a7626c5b04)
 
+## DI grpah
+
+![di_graph](https://github.com/2023-DeuCapstone-VisuallyImpairedGloves/Front-App/assets/75519689/242f3ceb-fd30-4915-bb7f-77e136e77c27)
+
 ## Main Point
 
  > TmapApi로 받은 데이터로 경로 안내 제공
