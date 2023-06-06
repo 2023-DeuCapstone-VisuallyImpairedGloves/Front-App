@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+option java_package = "com.deucapstone2023.data";
+option java_multiple_files = true;
+
+message SettingPreferences {
+    bool status = 1;
+}

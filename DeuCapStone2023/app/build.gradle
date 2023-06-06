@@ -1,19 +1,19 @@
 plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-    id("androidx.navigation.safeargs.kotlin")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.android.navigation.safeargs)
+    alias(libs.plugins.hilt)
+
     id 'kotlin-kapt'
-    id 'dagger.hilt.android.plugin'
-    id "com.google.protobuf" version "0.8.17"
     id 'de.undercouch.download'
 }
 
 android {
-    namespace 'com.example.deucapstone2023'
+    namespace 'com.deucapstone2023.app'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.deucapstone2023"
+        applicationId "com.deucapstone2023.app"
         minSdk 29
         targetSdk 33
         versionCode 1
@@ -36,7 +36,7 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '11'
     }
     buildFeatures {
         compose true
@@ -57,96 +57,32 @@ apply from: 'download_models.gradle'
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.10.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.8.0'
-    implementation 'androidx.activity:activity-compose:1.7.1'
-    implementation 'androidx.core:core-ktx:1.9.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation(project(":domain"))
+    implementation(project(":data"))
+    implementation project(":presentation:ui")
+    implementation(project(":presentation:design"))
 
-    // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2022.12.00')
-    implementation composeBom
-    androidTestImplementation composeBom
+    implementation(libs.core.ktx)
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.activity.compose)
 
-    implementation 'androidx.compose.material3:material3'
-    implementation 'androidx.compose.material:material'
-    implementation 'androidx.compose.foundation:foundation'
-    implementation 'androidx.compose.ui:ui'
-    implementation 'androidx.compose.ui:ui-tooling-preview'
-    debugImplementation 'androidx.compose.ui:ui-tooling'
-    implementation 'androidx.compose.ui:ui-viewbinding'
+    implementation(libs.bundles.hilt)
+    kapt(libs.dagger.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
 
-    //Navigation
-    def nav_version = "2.5.3"
-    implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
-    implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
-    implementation("androidx.navigation:navigation-compose:$nav_version")
+    implementation(libs.bundles.navigation)
 
-    // Room components
-    def room_version = "2.5.1"
-    implementation "androidx.room:room-ktx:$room_version"
-    kapt "androidx.room:room-compiler:$room_version"
-    androidTestImplementation "androidx.room:room-testing:$room_version"
+    implementation platform(libs.compose.bom)
+    androidTestImplementation(libs.compose.bom)
+    implementation(libs.bundles.compose)
+    debugImplementation(libs.compose.ui.tooling)
 
-    // Lifecycle
-    def lifecycle_version = "2.6.1"
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-service:$lifecycle_version"
+    implementation(libs.bundles.lifecycle)
 
-    //hilt
-    implementation("com.google.dagger:hilt-android:2.44")
-    kapt("com.google.dagger:hilt-android-compiler:2.44")
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach{
-        kotlinOptions{
-            freeCompilerArgs +=["-Xjvm-default=all",]
-        }
-    }
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0-alpha01")
+    implementation(libs.bundles.tensorflow)
 
-    // data store
-    implementation  "androidx.datastore:datastore:1.0.0"
-    implementation  "com.google.protobuf:protobuf-javalite:3.18.0"
-
-    //T map
-    implementation files('libs/vsm-tmap-sdk-v2-android-1.6.60.aar')
-    implementation files('libs/tmap-sdk-1.2.aar')
-
-    // retrofit,okhttp
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation "com.squareup.okhttp3:logging-interceptor:4.9.3"
-    implementation 'com.squareup.retrofit2:converter-scalars:2.9.0'
-
-    // locationService
-    implementation 'com.google.android.gms:play-services-location:21.0.1'
-
-    //tensorflow
-    implementation 'org.tensorflow:tensorflow-lite-task-vision:0.4.0'
-    implementation 'org.tensorflow:tensorflow-lite-gpu-delegate-plugin:0.4.0'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:2.9.0'
-}
-
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.18.0"
-    }
-
-    generateProtoTasks {
-        all().each { task ->
-            task.builtins {
-                java {
-                    option 'lite'
-                }
-            }
-        }
-    }
+    testImplementation (libs.JUnit)
+    androidTestImplementation (libs.test.ext)
+    androidTestImplementation (libs.test.espresso)
 }
