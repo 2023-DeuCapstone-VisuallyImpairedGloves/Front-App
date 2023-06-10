@@ -68,8 +68,8 @@ GPS정보와 방위정보를 이용하여 시각장애인이 원하는 목적지
 
 ## Member
 
-> **황진호 ([jowunnal](https://github.com/jowunnal "github link"))**
+> **황진호 ([jowunnal](https://github.com/jowunnal "github link"))** 그외 구현
 
-> **공경일 ([kyungil9](https://github.com/kyungil9 "github link"))**
+> **공경일 ([kyungil9](https://github.com/kyungil9 "github link"))** esp모듈과 블루투스간 데이터 송수신 파트 구현
 
 
