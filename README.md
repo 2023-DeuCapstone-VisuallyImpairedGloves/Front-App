@@ -68,8 +68,12 @@ GPS정보와 방위정보를 이용하여 시각장애인이 원하는 목적지
 
 ## Member
 
-> **황진호 ([jowunnal](https://github.com/jowunnal "github link"))** 그외 구현
+> **황진호 ([jowunnal](https://github.com/jowunnal "github link"))** 음성<->텍스트 인식, 대화형 서비스, TMapSdk 의 지도 정보 가져오기, 네비게이션 알고리즘, 모듈 구조 및 아키텍처 구현
 
 > **공경일 ([kyungil9](https://github.com/kyungil9 "github link"))** esp모듈과 블루투스간 데이터 송수신 파트와 tensorflow-lite 파트 구현
 
+## 결과
 
+- 캡스톤 디자인 교과목 취득점수 99 (100점 만점)
+- [2023 상반기 교내 캡스톤 경진대회 본선 진출(상위 25개 작품)](https://linc.deu.ac.kr/main/Page/Sub.aspx?mc=28 "link")
+- 2023 하반기 교내 캡스톤 경진대회 장려상 수상
